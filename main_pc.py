@@ -3,7 +3,6 @@ import sys
 import time
 import traceback
 
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import *
 
 from app.log import logger
@@ -16,8 +15,6 @@ ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("WeChatReport")
 class ViewController(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('解密')
-        self.setWindowIcon(QIcon(':/icons/icons/logo.png'))
         self.viewMainWIndow = None
         self.viewDecrypt = None
 
@@ -41,7 +38,7 @@ class ViewController(QWidget):
         self.viewMainWIndow = mainview.MainWinController(username=username)
         self.viewMainWIndow.exitSignal.connect(self.close)
         try:
-            self.viewMainWIndow.setWindowTitle("Chat")
+            self.viewMainWIndow.setWindowTitle("留痕")
             self.viewMainWIndow.show()
             end = time.time()
             print('ok', end - start)

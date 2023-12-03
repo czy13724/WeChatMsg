@@ -9,8 +9,7 @@ from ..DataBase import hard_link_db
 from ..person_pc import MePC
 from ..util import get_abs_path
 
-if not os.path.exists('./data/聊天记录'):
-    os.mkdir('./data/聊天记录')
+os.makedirs('./data/聊天记录', exist_ok=True)
 
 
 def escape_js_and_html(input_str):
@@ -61,14 +60,13 @@ class Output(QThread):
 
     def to_csv_all(self):
         origin_docx_path = f"{os.path.abspath('.')}/data/聊天记录/"
-        if not os.path.exists(origin_docx_path):
-            os.mkdir(origin_docx_path)
+        os.makedirs(origin_docx_path, exist_ok=True)
         filename = f"{os.path.abspath('.')}/data/聊天记录/messages.csv"
         # columns = ["用户名", "消息内容", "发送时间", "发送状态", "消息类型", "isSend", "msgId"]
         columns = ['localId', 'TalkerId', 'Type', 'SubType',
                    'IsSender', 'CreateTime', 'Status', 'StrContent',
                    'StrTime']
-        messages = msg.get_messages_all()
+        messages = msg_db.get_messages_all()
         # 写入CSV文件
         with open(filename, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
@@ -83,11 +81,11 @@ class Output(QThread):
         elif self.output_type == self.CSV_ALL:
             self.to_csv_all()
         else:
-            self.Child0 = ChildThread(self.contact, type_=self.output_type)
-            self.Child0.progressSignal.connect(self.progress)
-            self.Child0.rangeSignal.connect(self.rangeSignal)
-            self.Child0.okSignal.connect(self.okSignal)
-            self.Child0.start()
+            self.Child = ChildThread(self.contact, type_=self.output_type)
+            self.Child.progressSignal.connect(self.progress)
+            self.Child.rangeSignal.connect(self.rangeSignal)
+            self.Child.okSignal.connect(self.okSignal)
+            self.Child.start()
 
     def cancel(self):
         self.requestInterruption()
@@ -145,8 +143,7 @@ class ChildThread(QThread):
 
     def to_csv(self):
         origin_docx_path = f"{os.path.abspath('.')}/data/聊天记录/{self.contact.remark}"
-        if not os.path.exists(origin_docx_path):
-            os.mkdir(origin_docx_path)
+        os.makedirs(origin_docx_path, exist_ok=True)
         filename = f"{os.path.abspath('.')}/data/聊天记录/{self.contact.remark}/{self.contact.remark}.csv"
         # columns = ["用户名", "消息内容", "发送时间", "发送状态", "消息类型", "isSend", "msgId"]
         columns = ['localId', 'TalkerId', 'Type', 'SubType',
@@ -163,8 +160,7 @@ class ChildThread(QThread):
 
     def to_csv_all(self):
         origin_docx_path = f"{os.path.abspath('.')}/data/聊天记录/"
-        if not os.path.exists(origin_docx_path):
-            os.mkdir(origin_docx_path)
+        os.makedirs(origin_docx_path, exist_ok=True)
         filename = f"{os.path.abspath('.')}/data/聊天记录/messages.csv"
         # columns = ["用户名", "消息内容", "发送时间", "发送状态", "消息类型", "isSend", "msgId"]
         columns = ['localId', 'TalkerId', 'Type', 'SubType',
@@ -181,8 +177,7 @@ class ChildThread(QThread):
 
     def to_html(self):
         origin_docx_path = f"{os.path.abspath('.')}/data/聊天记录/{self.contact.remark}"
-        if not os.path.exists(origin_docx_path):
-            os.mkdir(origin_docx_path)
+        os.makedirs(origin_docx_path, exist_ok=True)
         messages = msg_db.get_messages(self.contact.wxid)
         filename = f"{os.path.abspath('.')}/data/聊天记录/{self.contact.remark}/{self.contact.remark}.html"
         f = open(filename, 'w', encoding='utf-8')
@@ -439,8 +434,7 @@ class ChildThread(QThread):
 
     def to_html_(self):
         origin_docx_path = f"{os.path.abspath('.')}/data/聊天记录/{self.contact.remark}"
-        if not os.path.exists(origin_docx_path):
-            os.mkdir(origin_docx_path)
+        os.makedirs(origin_docx_path, exist_ok=True)
         messages = msg_db.get_messages(self.contact.wxid)
         filename = f"{os.path.abspath('.')}/data/聊天记录/{self.contact.remark}/{self.contact.remark}.html"
         f = open(filename, 'w', encoding='utf-8')
