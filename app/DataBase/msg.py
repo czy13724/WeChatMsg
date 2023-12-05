@@ -7,8 +7,6 @@ from pprint import pprint
 
 from app.log import logger
 
-DB = None
-cursor = None
 db_path = "./app/Database/Msg/MSG.db"
 lock = threading.Lock()
 
@@ -95,7 +93,7 @@ class Msg:
                 from MSG
                 where StrTalker = ? and localId < ?
                 order by CreateTime desc 
-                limit 10 
+                limit 10
             '''
         result = None
         if not self.open_flag:
@@ -172,6 +170,24 @@ class Msg:
 
         return res
 
+    def get_first_time_of_message(self, username_):
+        if not self.open_flag:
+            return None
+        sql = '''
+            select StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime
+            from MSG
+            where StrTalker=?
+            order by CreateTime
+            limit 1
+        '''
+        try:
+            lock.acquire(True)
+            self.cursor.execute(sql, [username_])
+            result = self.cursor.fetchone()
+        finally:
+            lock.release()
+        return result
+
     def close(self):
         if self.open_flag:
             try:
@@ -197,3 +213,4 @@ if __name__ == '__main__':
     pprint(msg.get_message_by_num('wxid_0o18ef858vnu22', local_id))
     print(msg.get_messages_by_keyword(wxid, '干嘛'))
     pprint(msg.get_messages_by_keyword(wxid, '干嘛')[0])
+    print(msg.get_first_time_of_message('wxid_0o18ef858vnu22'))
