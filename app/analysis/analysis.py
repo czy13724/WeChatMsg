@@ -2,11 +2,12 @@ from collections import Counter
 
 from PyQt5.QtCore import QFile, QTextStream, QIODevice
 
+import sys
+sys.path.append('.')
+
 from app.DataBase import msg_db, MsgType
-from app.person_pc import ContactPC
-import jieba
 from pyecharts import options as opts
-from pyecharts.charts import Pie, WordCloud, Calendar, Bar, Line, Timeline, Grid
+from pyecharts.charts import WordCloud, Calendar, Bar
 from app.resources import resource_rc
 
 var = resource_rc.qt_resource_name
@@ -76,11 +77,127 @@ def wordcloud(wxid):
     }
 
 
+def calendar_chart(wxid, year):
+    calendar_data = msg_db.get_messages_by_days(wxid, year)
+
+    if not calendar_data:
+        return False
+    min_ = min(map(lambda x: x[1], calendar_data))
+    max_ = max(map(lambda x: x[1], calendar_data))
+
+    c = (
+        Calendar(init_opts=opts.InitOpts(width=f"{charts_width}px", height=f"{charts_height}px"))
+        .add(
+            "",
+            calendar_data,
+            calendar_opts=opts.CalendarOpts(range_=year)
+        )
+        .set_global_opts(
+            title_opts=opts.TitleOpts(title="2023年聊天情况"),
+            visualmap_opts=opts.VisualMapOpts(
+                max_=max_,
+                min_=min_,
+                orient="horizontal",
+                # is_piecewise=True,
+                # pos_top="200px",
+                pos_bottom="0px",
+                pos_left="0px",
+            ),
+            legend_opts=opts.LegendOpts(is_show=False)
+        )
+    )
+    return {
+        'chart_data': c
+    }
+
+
+def month_count(wxid, year):
+    """
+    每月聊天条数
+    """
+    msg_data = msg_db.get_messages_by_month(wxid, year)
+    y_data = list(map(lambda x: x[1], msg_data))
+    x_axis = list(map(lambda x: x[0], msg_data))
+    m = (
+        Bar(init_opts=opts.InitOpts(width=f"{charts_width}px", height=f"{charts_height}px"))
+        .add_xaxis(x_axis)
+        .add_yaxis("消息数量", y_data,
+                   label_opts=opts.LabelOpts(is_show=False),
+                   itemstyle_opts=opts.ItemStyleOpts(color="skyblue"),
+        )
+        .set_global_opts(
+            title_opts=opts.TitleOpts(title="逐月统计", subtitle=None),
+            datazoom_opts=opts.DataZoomOpts(),
+            toolbox_opts=opts.ToolboxOpts(),
+            visualmap_opts=opts.VisualMapOpts(
+                min_=min(y_data),  
+                max_=max(y_data),  
+                dimension=1,  # 根据第2个维度（y 轴）进行映射
+                is_piecewise=False,  # 是否分段显示
+                range_color=["#66ccff", "#003366"],  # 设置颜色范围
+                type_="color",
+                pos_right="0%",
+                ),
+        )
+    )
+
+    return {
+        'chart_data': m
+    }
+
+
+def hour_count(wxid, year):
+    """
+    小时计数聊天条数
+    """
+    msg_data = msg_db.get_messages_by_hour(wxid, year)
+    print(msg_data)
+    y_data = list(map(lambda x: x[1], msg_data))
+    x_axis = list(map(lambda x: x[0], msg_data))
+    h = (
+        Line(init_opts=opts.InitOpts(width=f"{charts_width}px", height=f"{charts_height}px"))
+        .add_xaxis(xaxis_data=x_axis)
+        .add_yaxis(
+            series_name="聊天频率",
+            y_axis=y_data,
+            markpoint_opts=opts.MarkPointOpts(
+                data=[
+                    opts.MarkPointItem(type_="max", name="最大值"),
+                    opts.MarkPointItem(type_="min", name="最小值", value=int(10)),
+                ]
+            ),
+            markline_opts=opts.MarkLineOpts(
+                data=[opts.MarkLineItem(type_="average", name="平均值")]
+            ),
+        )
+        .set_global_opts(
+            title_opts=opts.TitleOpts(title="聊天时段", subtitle=None),
+            # datazoom_opts=opts.DataZoomOpts(),
+            # toolbox_opts=opts.ToolboxOpts(),
+        )
+        .set_series_opts(
+            label_opts=opts.LabelOpts(
+                is_show=False
+            )
+        )
+    )
+
+    return {
+        'chart_data': h
+    }
+
+
 class Analysis:
     pass
 
 
 if __name__ == '__main__':
     msg_db.init_database(path='../DataBase/Msg/MSG.db')
-    w = wordcloud('wxid_0o18ef858vnu22')
-    print(w)
+    # w = wordcloud('wxid_0o18ef858vnu22')
+    c = calendar_chart('wxid_27hqbq7vx5hf22', '2023')
+    c['chart_data'].render("./data/聊天统计/calendar.html")
+    print('c:::', c)
+    m = month_count('wxid_27hqbq7vx5hf22', '2023')
+    m['chart_data'].render("./data/聊天统计/month_num.html")
+    h = hour_count('wxid_27hqbq7vx5hf22', '2023')
+    h['chart_data'].render("./data/聊天统计/hour_count.html")

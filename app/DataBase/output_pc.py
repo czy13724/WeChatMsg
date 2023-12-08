@@ -3,8 +3,9 @@ import html
 import os
 
 from PyQt5.QtCore import pyqtSignal, QThread
+from PyQt5.QtWidgets import QFileDialog
 
-from . import msg_db
+from . import msg_db, micro_msg_db
 from .package_msg import PackageMsg
 from ..DataBase import hard_link_db
 from ..person_pc import MePC
@@ -14,7 +15,7 @@ os.makedirs('./data/聊天记录', exist_ok=True)
 
 
 def makedirs(path):
-    os.makedirs(path,exist_ok=True)
+    os.makedirs(path, exist_ok=True)
     os.makedirs(os.path.join(path, 'image'), exist_ok=True)
     os.makedirs(os.path.join(path, 'emoji'), exist_ok=True)
     os.makedirs(os.path.join(path, 'video'), exist_ok=True)
@@ -52,6 +53,7 @@ class Output(QThread):
     DOCX = 1
     HTML = 2
     CSV_ALL = 3
+    CONTACT_CSV = 4
 
     def __init__(self, contact, parent=None, type_=DOCX):
         super().__init__(parent)
@@ -71,12 +73,15 @@ class Output(QThread):
     def to_csv_all(self):
         origin_docx_path = f"{os.path.abspath('.')}/data/聊天记录/"
         os.makedirs(origin_docx_path, exist_ok=True)
-        filename = f"{os.path.abspath('.')}/data/聊天记录/messages.csv"
+        filename = QFileDialog.getSaveFileName(None, "save file", os.path.join(os.getcwd(),'messages.csv'), "csv files (*.csv);;all files(*.*)")
+        if not filename:
+            return
+        filename = filename[0]
         # columns = ["用户名", "消息内容", "发送时间", "发送状态", "消息类型", "isSend", "msgId"]
         columns = ['localId', 'TalkerId', 'Type', 'SubType',
                    'IsSender', 'CreateTime', 'Status', 'StrContent',
                    'StrTime', 'Remark', 'NickName', 'Sender']
-        # messages = msg_db.get_messages_all()
+
         packagemsg = PackageMsg()
         messages = packagemsg.get_package_message_all()
         # 写入CSV文件
@@ -87,11 +92,29 @@ class Output(QThread):
             writer.writerows(messages)
         self.okSignal.emit(1)
 
+    def contact_to_csv(self):
+        filename = QFileDialog.getSaveFileName(None, "save file", os.path.join(os.getcwd(),'contacts.csv'), "csv files (*.csv);;all files(*.*)")
+        if not filename:
+            return
+        filename = filename[0]
+        # columns = ["用户名", "消息内容", "发送时间", "发送状态", "消息类型", "isSend", "msgId"]
+        columns = ['UserName','Alias', 'Type', 'Remark', 'NickName', 'PYInitial', 'RemarkPYInitial', 'smallHeadImgUrl', 'bigHeadImgUrl']
+        contacts = micro_msg_db.get_contact()
+        # 写入CSV文件
+        with open(filename, mode='w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(columns)
+            # 写入数据
+            writer.writerows(contacts)
+        self.okSignal.emit(1)
+
     def run(self):
         if self.output_type == self.DOCX:
             return
         elif self.output_type == self.CSV_ALL:
             self.to_csv_all()
+        elif self.output_type == self.CONTACT_CSV:
+            self.contact_to_csv()
         else:
             self.Child = ChildThread(self.contact, type_=self.output_type)
             self.Child.progressSignal.connect(self.progress)
@@ -584,6 +607,11 @@ class ChildThread(QThread):
       height: 42px;
       border-radius: 50%;
   }
+  .chat-video video{
+    margin-right: 18px;
+    margin-left: 18px;
+    max-width: 350px;
+  }
   .input-area{
       border-top:0.5px solid #e0e0e0;
       height: 150px;
@@ -880,15 +908,6 @@ const chatMessages = [
                     f'''{{ type:{type_}, text: '{str_content}',is_send:{is_send},avatar_path:'{avatar}'}},'''
                 )
             elif type_ == 3:
-                import re
-                pattern1 = r'<msg><img length="\d+" hdlength="0" /><commenturl></commenturl></msg>'
-                pattern2 = r'<msg><img /></msg>'
-                match = re.search(pattern1, str_content)
-                if match:
-                    continue
-                match = re.search(pattern2, str_content)
-                if match:
-                    continue
                 image_path = hard_link_db.get_image(content=str_content, thumb=False)
                 image_path = path.get_relative_path(image_path, base_path=f'/data/聊天记录/{self.contact.remark}/image')
                 image_path = image_path.replace('\\', '/')
@@ -900,6 +919,22 @@ const chatMessages = [
                 f.write(
                     f'''{{ type:{type_}, text: '{image_path}',is_send:{is_send},avatar_path:'{avatar}'}},'''
                 )
+            elif type_ == 43:
+                video_path = hard_link_db.get_video(content=str_content, thumb=False)
+                video_path = f'file:///{path.wx_path()}/{MePC().wxid}/{video_path}'
+                video_path = video_path.replace('\\', '/')
+                if self.is_5_min(timestamp):
+                    f.write(
+                        f'''{{ type:0, text: '{str_time}',is_send:0,avatar_path:''}},'''
+                    )
+                f.write(
+                    f'''{{ type:{type_}, text: '{video_path}',is_send:{is_send},avatar_path:'{avatar}'}},'''
+                )
+            elif type_ == 10000:
+                str_content = escape_js_and_html(str_content.lstrip('<revokemsg>').rstrip('</revokemsg>'))
+                f.write(
+                    f'''{{ type:0, text: '{str_content}',is_send:{is_send},avatar_path:''}},'''
+                )
         html_end = '''
 ];
     function renderMessages(messages) {
@@ -907,13 +942,13 @@ const chatMessages = [
             const messageElement = document.createElement('div');
             if (message.type == 1){
                 if (message.is_send == 1){
-                messageElement.className = "item item-right";
-                messageElement.innerHTML = `<div class='bubble bubble-right'>${message.text}</div><div class='avatar'><img src="${message.avatar_path}" /></div>`
-            }
-            else if(message.is_send==0){
-                messageElement.className = "item item-left";
-                messageElement.innerHTML = `<div class='avatar'><img src="${message.avatar_path}" /></div><div class='bubble bubble-right'>${message.text}</div>`
-            }
+                    messageElement.className = "item item-right";
+                    messageElement.innerHTML = `<div class='bubble bubble-right'>${message.text}</div><div class='avatar'><img src="${message.avatar_path}" /></div>`
+                }
+                else if(message.is_send==0){
+                    messageElement.className = "item item-left";
+                    messageElement.innerHTML = `<div class='avatar'><img src="${message.avatar_path}" /></div><div class='bubble bubble-right'>${message.text}</div>`
+                }
             }
             else if(message.type == 0){
                 messageElement.className = "item item-center";
@@ -921,13 +956,23 @@ const chatMessages = [
             }
             else if (message.type == 3){
                 if (message.is_send == 1){
-                messageElement.className = "item item-right";
-                messageElement.innerHTML = `<div class='chat-image'><img src="${message.text}" /></div><div class='avatar'><img src="${message.avatar_path}" /></div>`
+                    messageElement.className = "item item-right";
+                    messageElement.innerHTML = `<div class='chat-image'><img src="${message.text}" /></div><div class='avatar'><img src="${message.avatar_path}" /></div>`
+                }
+                else if(message.is_send==0){
+                    messageElement.className = "item item-left";
+                    messageElement.innerHTML = `<div class='avatar'><img src="${message.avatar_path}" /></div><div class='chat-image'><img src="${message.text}" /></div>`
+                }
             }
-            else if(message.is_send==0){
-                messageElement.className = "item item-left";
-                messageElement.innerHTML = `<div class='avatar'><img src="${message.avatar_path}" /></div><div class='chat-image'><img src="${message.text}" /></div>`
-            }
+            else if (message.type == 43) {
+                if (message.is_send == 1){
+                    messageElement.className = "item item-right";
+                    messageElement.innerHTML = `<div class='chat-video'><video src="${message.text}" controls /></div><div class='avatar'><img src="${message.avatar_path}" /></div>`
+                }
+                else if(message.is_send==0){
+                    messageElement.className = "item item-left";
+                    messageElement.innerHTML = `<div class='avatar'><img src="${message.avatar_path}" /></div><div class='chat-video'><video src="${message.text}" controls /></div>`
+                }
             }
             chatContainer.appendChild(messageElement);
         }
@@ -951,13 +996,13 @@ const chatMessages = [
         const messageElement = document.createElement('div');
             if (message.type == 1){
                 if (message.is_send == 1){
-                messageElement.className = "item item-right";
-                messageElement.innerHTML = `<div class='bubble bubble-right'>${message.text}</div><div class='avatar'><img src="${message.avatar_path}" /></div>`
-            }
-            else if(message.is_send==0){
-                messageElement.className = "item item-left";
-                messageElement.innerHTML = `<div class='avatar'><img src="${message.avatar_path}" /></div><div class='bubble bubble-right'>${message.text}</div>`
-            }
+                    messageElement.className = "item item-right";
+                    messageElement.innerHTML = `<div class='bubble bubble-right'>${message.text}</div><div class='avatar'><img src="${message.avatar_path}" /></div>`
+                }
+                else if(message.is_send==0){
+                    messageElement.className = "item item-left";
+                    messageElement.innerHTML = `<div class='avatar'><img src="${message.avatar_path}" /></div><div class='bubble bubble-right'>${message.text}</div>`
+                }
             }
             else if(message.type == 0){
                 messageElement.className = "item item-center";
@@ -965,13 +1010,23 @@ const chatMessages = [
             }
             else if (message.type == 3){
                 if (message.is_send == 1){
-                messageElement.className = "item item-right";
-                messageElement.innerHTML = `<div class='chat-image' ><img src="${message.text}" onclick="showModal(this)"/></div><div class='avatar'><img src="${message.avatar_path}" /></div>`
+                    messageElement.className = "item item-right";
+                    messageElement.innerHTML = `<div class='chat-image' ><img src="${message.text}" onclick="showModal(this)"/></div><div class='avatar'><img src="${message.avatar_path}" /></div>`
+                }
+                else if(message.is_send==0){
+                    messageElement.className = "item item-left";
+                    messageElement.innerHTML = `<div class='avatar'><img src="${message.avatar_path}"/></div><div class='chat-image'><img src="${message.text}" onclick="showModal(this)"/></div>`
+                }
             }
-            else if(message.is_send==0){
-                messageElement.className = "item item-left";
-                messageElement.innerHTML = `<div class='avatar'><img src="${message.avatar_path}"/></div><div class='chat-image'><img src="${message.text}" onclick="showModal(this)"/></div>`
-            }
+            else if (message.type == 43) {
+                if (message.is_send == 1){
+                    messageElement.className = "item item-right";
+                    messageElement.innerHTML = `<div class='chat-video'><video src="${message.text}" controls /></div><div class='avatar'><img src="${message.avatar_path}" /></div>`
+                }
+                else if(message.is_send==0){
+                    messageElement.className = "item item-left";
+                    messageElement.innerHTML = `<div class='avatar'><img src="${message.avatar_path}" /></div><div class='chat-video'><video src="${message.text}" controls "/></div>`
+                }
             }
             chatContainer.appendChild(messageElement);
     }

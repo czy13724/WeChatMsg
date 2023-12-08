@@ -87,13 +87,30 @@ class Msg:
         result.sort(key=lambda x: x[5])
         return result
 
+    def get_messages_length(self):
+        sql = '''
+            select count(*)
+            from MSG
+        '''
+        if not self.open_flag:
+            return None
+        try:
+            lock.acquire(True)
+            self.cursor.execute(sql)
+            result = self.cursor.fetchone()
+        except Exception as e:
+            result = None
+        finally:
+            lock.release()
+        return result[0]
+
     def get_message_by_num(self, username_, local_id):
         sql = '''
-                select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime
+                select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime,MsgSvrID,BytesExtra
                 from MSG
                 where StrTalker = ? and localId < ?
                 order by CreateTime desc 
-                limit 10
+                limit 20
             '''
         result = None
         if not self.open_flag:
@@ -113,7 +130,7 @@ class Msg:
         if not self.open_flag:
             return None
         sql = '''
-            select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime,MsgSvrID
+            select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime,MsgSvrID,BytesExtra
             from MSG
             where StrTalker=? and Type=?
             order by CreateTime
@@ -130,7 +147,7 @@ class Msg:
         if not self.open_flag:
             return None
         sql = '''
-            select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime,MsgSvrID
+            select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime,MsgSvrID,BytesExtra
             from MSG
             where StrTalker=? and Type=1 and LENGTH(StrContent)<? and StrContent like ?
             order by CreateTime desc
@@ -170,6 +187,66 @@ class Msg:
 
         return res
 
+    def get_messages_by_days(self, username_, year_='2023'):
+        sql = '''
+            SELECT strftime('%Y-%m-%d',CreateTime,'unixepoch','localtime') as days,count(MsgSvrID)
+            from MSG
+            where StrTalker = ? and strftime('%Y',CreateTime,'unixepoch','localtime') = ?
+            group by days
+        '''
+        result = None
+        if not self.open_flag:
+            return None
+        try:
+            lock.acquire(True)
+            self.cursor.execute(sql, [username_, year_])
+            result = self.cursor.fetchall()
+        finally:
+            lock.release()
+        return result
+
+    def get_messages_by_month(self, username_, year_='2023'):
+        sql = '''
+                SELECT strftime('%Y-%m',CreateTime,'unixepoch','localtime') as days,count(MsgSvrID)
+                from MSG
+                where StrTalker = ? and strftime('%Y',CreateTime,'unixepoch','localtime') = ?
+                group by days
+            '''
+        result = None
+        if not self.open_flag:
+            return None
+        try:
+            lock.acquire(True)
+            self.cursor.execute(sql, [username_, year_])
+            result = self.cursor.fetchall()
+        except sqlite3.DatabaseError:
+            logger.error(f'{traceback.format_exc()}\n数据库损坏请删除msg文件夹重试')
+        finally:
+            lock.release()
+        # result.sort(key=lambda x: x[5])
+        return result
+
+    def get_messages_by_hour(self, username_, year_='2023'):
+        sql = '''
+                SELECT strftime('%H:00',CreateTime,'unixepoch','localtime') as hours,count(MsgSvrID)
+                from MSG
+                where StrTalker = ? and strftime('%Y',CreateTime,'unixepoch','localtime') = ?
+                group by hours
+            '''
+        result = None
+        if not self.open_flag:
+            return None
+        try:
+            lock.acquire(True)
+            self.cursor.execute(sql, [username_, year_])
+            result = self.cursor.fetchall()
+        except sqlite3.DatabaseError:
+            logger.error(f'{traceback.format_exc()}\n数据库损坏请删除msg文件夹重试')
+        finally:
+            lock.release()
+        # result.sort(key=lambda x: x[5])
+        return result
+
     def get_first_time_of_message(self, username_):
         if not self.open_flag:
             return None
@@ -207,10 +284,7 @@ if __name__ == '__main__':
     msg.init_database()
     result = msg.get_message_by_num('wxid_0o18ef858vnu22', 9999999)
     print(result)
-    print(result[-1][0])
-    local_id = result[-1][0]
-    wxid = 'wxid_0o18ef858vnu22'
-    pprint(msg.get_message_by_num('wxid_0o18ef858vnu22', local_id))
-    print(msg.get_messages_by_keyword(wxid, '干嘛'))
-    pprint(msg.get_messages_by_keyword(wxid, '干嘛')[0])
-    print(msg.get_first_time_of_message('wxid_fervbwign7m822'))
+    result = msg.get_messages_by_type('wxid_0o18ef858vnu22',43)
+    bytes_ = result[-1][-1]
+    print(bytes_)
+    print(bytes_)
