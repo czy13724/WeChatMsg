@@ -1,12 +1,13 @@
 from PyQt5.QtCore import pyqtSignal, QUrl, QThread
 from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtWidgets import QWidget, QMenu, QAction, QToolButton, QMessageBox
+from PyQt5.QtWidgets import QWidget, QMenu, QAction, QToolButton, QMessageBox, QDialog
 
 from app.DataBase.output_pc import Output
 from app.ui_pc.Icon import Icon
 from .contactInfoUi import Ui_Form
 from .userinfo import userinfo
 from ...person_pc import ContactPC
+from .export_dialog import ExportDialog
 
 
 class ContactInfo(QWidget, Ui_Form):
@@ -17,7 +18,7 @@ class ContactInfo(QWidget, Ui_Form):
     def __init__(self, contact, parent=None):
         super(ContactInfo, self).__init__(parent)
         self.setupUi(self)
-        self.contact:ContactPC = contact
+        self.contact: ContactPC = contact
         self.view_userinfo = userinfo.UserinfoController(self.contact)
         self.btn_back.clicked.connect(self.back)
         self.init_ui()
@@ -37,17 +38,20 @@ class ContactInfo(QWidget, Ui_Form):
         self.toDocxAct = QAction(Icon.ToDocx, '导出Docx', self)
         self.toCSVAct = QAction(Icon.ToCSV, '导出CSV', self)
         self.toHtmlAct = QAction(Icon.ToHTML, '导出HTML', self)
+        self.toTxtAct = QAction(Icon.ToTXT, '导出TXT', self)
         self.toolButton_output.setPopupMode(QToolButton.MenuButtonPopup)
         self.toolButton_output.clicked.connect(self.toolButton_show)
         menu.addAction(self.toDocxAct)
         menu.addAction(self.toCSVAct)
         menu.addAction(self.toHtmlAct)
+        menu.addAction(self.toTxtAct)
         self.toolButton_output.setMenu(menu)
         self.toolButton_output.setIcon(Icon.Output)
         # self.toolButton_output.addSeparator()
         self.toHtmlAct.triggered.connect(self.output)
         self.toDocxAct.triggered.connect(self.output)
         self.toCSVAct.triggered.connect(self.output)
+        self.toTxtAct.triggered.connect(self.output)
 
     def toolButton_show(self):
         self.toolButton_output.showMenu()
@@ -116,14 +120,15 @@ class ContactInfo(QWidget, Ui_Form):
             return
             self.outputThread = Output(self.Me, self.contact.wxid)
         elif self.sender() == self.toCSVAct:
-            self.outputThread = Output(self.contact, type_=Output.CSV)
+            # self.outputThread = Output(self.contact, type_=Output.CSV)
+            dialog = ExportDialog(self.contact,title='选择导出的消息类型', file_type='csv', parent=self)
+            result = dialog.exec_()  # 使用exec_()获取用户的操作结果
         elif self.sender() == self.toHtmlAct:
-            self.outputThread = Output(self.contact, type_=Output.HTML)
-
-        self.outputThread.progressSignal.connect(self.output_progress)
-        self.outputThread.rangeSignal.connect(self.set_progressBar_range)
-        self.outputThread.okSignal.connect(self.hide_progress_bar)
-        self.outputThread.start()
+            dialog = ExportDialog(self.contact,title='选择导出的消息类型', file_type='html', parent=self)
+            result = dialog.exec_()  # 使用exec_()获取用户的操作结果
+        elif self.sender() == self.toTxtAct:
+            dialog = ExportDialog(self.contact, title='选择导出的消息类型', file_type='txt', parent=self)
+            result = dialog.exec_()  # 使用exec_()获取用户的操作结果
 
     def hide_progress_bar(self, int):
         reply = QMessageBox(self)
