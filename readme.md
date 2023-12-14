@@ -35,8 +35,7 @@
 
 ## 🍉功能
 
-- 🔒️🔑🔓️手机本地微信数据库
-- 🔒️🔑🔓️PC端本地微信数据库
+- 🔒️🔑🔓️Windows本地微信数据库
 - 还原微信聊天界面
     - 🗨文本✅
     - 🏝图片✅
@@ -54,15 +53,7 @@
     - 合并多个备份数据❎
     - 语音❎
     - 文件❎
-
 - 小伙伴们想要其他功能可以留言哦📬
-- 有任何问题可以随时联系我(863909694@qq.com)
-
-为了方便大家交流，我新建了一个QQ群💬：**474379264**
-
-大家有任何想法💡、建议或bug可以群里反馈给我
-
-[//]: # (<img src="doc/images/qq.jpg" height=480/>)
 
 ## 🥤效果
 
@@ -105,7 +96,7 @@
 # Python>=3.10
 git clone https://github.com/LC044/WeChatMsg
 cd WeChatMsg
-pip install -r requirements_pc.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 ### 2. 使用
@@ -121,7 +112,7 @@ pip install -r requirements_pc.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 2. 运行程序
 
 ```shell
-python main_pc.py
+python main.py
 ```
 
 3. 点击获取信息
@@ -196,13 +187,6 @@ python main_pc.py
 
 ![](./doc/images/login_wx.png)
 
-如果您遇到下图所示的问题，需要先运行`decrypt_window`的可执行文件或者源代码文件
-
-```
-python decrypt_window.py
-```
-
-![](./doc/images/decrypt_wx.png)
 
 如果您在运行可执行程序的时候出现闪退的现象，请右击软件使用管理员权限运行。
 
@@ -213,7 +197,7 @@ python decrypt_window.py
 
 ![](./doc/images/with_wxid_name.png)
 
-如果出现如图所示的报错信息，将`app/database/msg`文件夹删除，重新运行`main_pc.py`。
+如果出现如图所示的报错信息，将`app/database/msg`文件夹删除，重新运行`main.py`。
 
 ![](./doc/images/err_log.png)
 
@@ -229,63 +213,6 @@ python decrypt_window.py
 
 </details>
 
-## 使用模拟器（支持可视化分析）
-
-<details>
-
-**不推荐使用，PC端微信可视化功能马上实现**
-
-1. 根据[教程](https://blog.csdn.net/m0_59452630/article/details/124222235?spm=1001.2014.3001.5501)获得两个文件
-    - auth_info_key_prefs.xml——解析数据库密码
-    - EnMicroMsg.db——聊天数据库
-    - **上面这两个文件就可以**
-2. 安装依赖库
-
-python版本>=3.10
-
-**说明:用到了python3.10的match语法，不方便更换python版本的小伙伴可以把match(运行报错的地方)更改为if else**
-
-命令行运行以下代码（**建议使用Pycharm打开项目，Pycharm会自动配置好所有东西，直接运行main.py即可**）
-
-```bash
-pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-```
-
-运行main.py
-
-```bash
-python main.py
-```
-
-3. 出现解密界面
-
-![image-20230521001305274](doc/images/image-20230521001305274.png)
-
-按照提示选择上面获得的两个文件，等待解密完成，重新运行程序
-
-4. 进入主界面
-
-这时候不显示头像，因为头像文件没有导入进来
-
-![image-20230521001547481](doc/images/image-20230521001547481.png)
-
-根据[教程](https://blog.csdn.net/m0_59452630/article/details/124222235?spm=1001.2014.3001.5501)
-将头像文件夹avatar复制到工程目录./app/data/目录下
-
-![image-20230521001726799](doc/images/image-20230521001726799.png)
-
-如果想要显示聊天图像就把[教程](https://blog.csdn.net/m0_59452630/article/details/124222235?spm=1001.2014.3001.5501)
-里的image2文件夹复制到./app/data文件夹里，效果跟上图一样
-
-复制进来之后再运行程序就有图像了
-
-![image-20230520235113261](doc/images/image-20230520235113261.png)
-
-</details>
-
-## 项目还有很多bug，希望大家能够及时反馈
-
-项目地址：https://github.com/LC044/WeChatMsg
 
 # 🏆致谢
 
@@ -301,21 +228,6 @@ python main.py
 
 [![Star History Chart](https://api.star-history.com/svg?repos=LC044/WeChatMsg&type=Date)](https://star-history.com/?utm_source=bestxtools.com#LC044/WeChatMsg&Date)
 
-# 🎄温馨提示
-
-如果您在使用该软件的过程中
-
-* 发现新的bug
-* 有新的功能诉求
-* 操作比较繁琐
-* 觉得UI不够美观
-* 等其他给您造成困扰的地方
-
-请提起[issue](https://github.com/LC044/WeChatMsg/issues)或者添加QQ群(进群前先点个⭐哦):[**474379264**](doc/images/qq.jpg)
-，我将尽快为您解决问题
-
-如果您是一名开发者，有新的想法或建议，欢迎[fork](https://github.com/LC044/WeChatMsg/forks)
-该项目并发起[PR](https://github.com/LC044/WeChatMsg/pulls)，我将把您的名字写入贡献者名单中
 
 # 贡献者
 
@@ -342,6 +254,35 @@ python main.py
 
 如果您提供赞助并希望出现在赞助者名单中，请在提交赞助时提供您的 GitHub 用户名或其他相关信息。
 
+您也可以在赞助时备注您的诉求，我将提前开发合理的功能需求。
+
 ## 感谢
 
 再次感谢您的支持，这对项目的持续发展至关重要！
+
+# 🎄温馨提示
+
+如果您在使用该软件的过程中
+
+* 发现新的bug
+* 有新的功能诉求
+* 操作比较繁琐
+* 觉得UI不够美观
+* 等其他给您造成困扰的地方
+
+请提起[issue](https://github.com/LC044/WeChatMsg/issues)，我将尽快为您解决问题
+
+如果您是一名开发者，有新的想法或建议，欢迎[fork](https://github.com/LC044/WeChatMsg/forks)
+该项目并发起[PR](https://github.com/LC044/WeChatMsg/pulls)，我将把您的名字写入贡献者名单中
+
+# 联系方式
+
+如果您遇到了问题，可以添加QQ群：**701805520**寻求帮助，由于精力有限，不能回答所有问题，所以还请您仔细阅读文档之后再考虑是否入群
+
+## 加群方式
+
+1. [fork](https://github.com/LC044/WeChatMsg/forks)该项目并发起[PR](https://github.com/LC044/WeChatMsg/pulls)
+2. 宣传该项目（在任一社交平台发图文介绍该项目）
+3. [赞助](#支持该项目)该项目
+
+注意：加群时请备注您的贡献，如PR链接、宣传截图或赞助金额，若没有审核通过，可添加QQ或发邮件：863909694@qq.com反馈问题（一定要备注来意）

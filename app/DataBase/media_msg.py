@@ -1,4 +1,6 @@
 import os.path
+import subprocess
+import sys
 from os import system
 import sqlite3
 import threading
@@ -8,7 +10,14 @@ from pilk import decode
 lock = threading.Lock()
 db_path = "./app/Database/Msg/MediaMSG.db"
 
+def get_ffmpeg_path():
+    # 获取打包后的资源目录
+    resource_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
 
+    # 构建 FFmpeg 可执行文件的路径
+    ffmpeg_path = os.path.join(resource_dir, 'app', 'resources', 'ffmpeg.exe')
+
+    return ffmpeg_path
 def singleton(cls):
     _instance = {}
 
@@ -55,17 +64,33 @@ class MediaMsg:
         silk_path = f"{output_path}\\{reserved0}.silk"
         pcm_path = f"{output_path}\\{reserved0}.pcm"
         mp3_path = f"{output_path}\\{reserved0}.mp3"
-        slik_path = silk_path.replace("/", "\\")
+        silk_path = silk_path.replace("/", "\\")
         pcm_path = pcm_path.replace("/", "\\")
         mp3_path = mp3_path.replace("/", "\\")
-        print(mp3_path)
         if os.path.exists(mp3_path):
             return mp3_path
-        open(silk_path, "wb").write(buf)
+        with open(silk_path, "wb") as f:
+            f.write(buf)
+        # open(silk_path, "wb").write()
         decode(silk_path, pcm_path, 44100)
-        system(f'ffmpeg.exe -loglevel quiet -y -f s16le -i "{pcm_path}" -ar 44100 -ac 1 "{mp3_path}"')
-        system(f'del "{silk_path}"')
-        system(f'del "{pcm_path}"')
+        try:
+            # 调用系统上的 ffmpeg 可执行文件
+            # 获取 FFmpeg 可执行文件的路径
+            ffmpeg_path = get_ffmpeg_path()
+            # 调用 FFmpeg
+            cmd = f'''{ffmpeg_path} -loglevel quiet -y -f s16le -i {pcm_path} -ar 44100 -ac 1 {mp3_path}'''
+            system(cmd)
+            # 源码运行的时候下面的有效
+            # 这里不知道怎么捕捉异常
+            cmd = f'''{os.path.join(os.getcwd(), 'app', 'resources', 'ffmpeg.exe')} -loglevel quiet -y -f s16le -i {pcm_path} -ar 44100 -ac 1 {mp3_path}'''
+            system(cmd)
+        except subprocess.CalledProcessError as e:
+            print(f"Error: {e}")
+            cmd = f'''{os.path.join(os.getcwd(),'app','resources','ffmpeg.exe')} -loglevel quiet -y -f s16le -i {pcm_path} -ar 44100 -ac 1 {mp3_path}'''
+            system(cmd)
+        system(f'del {silk_path}')
+        system(f'del {pcm_path}')
+        print(mp3_path)
         return mp3_path
 
     def get_audio_text(self, content):
@@ -73,7 +98,7 @@ class MediaMsg:
             root = ET.fromstring(content)
             transtext = root.find(".//voicetrans").get("transtext")
             return transtext
-        except ET.ParseError:
+        except:
             return ""
 
 

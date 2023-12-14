@@ -1,43 +1,11 @@
 import os.path
+import re
 from typing import Dict
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 
-from app.DataBase import data
-from app.ui_pc.Icon import Icon
-
-
-# from app.Ui.Icon import Icon
-
-
-class Person:
-    def __init__(self, wxid: str):
-
-        self.wxid = wxid
-        self.conRemark = data.get_conRemark(wxid)
-        self.nickname, self.alias = data.get_nickname(wxid)
-        self.avatar_path = data.get_avator(wxid)
-        if os.path.exists(self.avatar_path):
-            self.avatar = QPixmap(self.avatar_path).scaled(60, 60)
-        else:
-            self.avatar_path = './app/data/icons/default_avatar.svg'
-            # self.avatar_path = Icon.Default_avatar_path
-            self.avatar = QPixmap(self.avatar_path).scaled(60, 60)
-
-
-class Me(Person):
-    def __init__(self, wxid: str):
-        super(Me, self).__init__(wxid)
-        self.city = None
-        self.province = None
-
-
-class Contact(Person):
-    def __init__(self, wxid: str):
-        super(Contact, self).__init__(wxid)
-        self.smallHeadImgUrl = ''
-        self.bigHeadImgUrl = ''
+from app.ui.Icon import Icon
 
 
 def singleton(cls):
@@ -55,7 +23,7 @@ def singleton(cls):
 class MePC:
     def __init__(self):
         self.avatar = QPixmap(Icon.Default_avatar_path)
-        self.avatar_path = 'D:\Project\Python\WeChatMsg\\app\data\icons\default_avatar.svg'
+        self.avatar_path = ':/icons/icons/default_avatar.svg'
         self.wxid = ''
         self.wx_dir = ''
         self.name = ''
@@ -80,10 +48,11 @@ class ContactPC:
         self.nickName = contact_info.get('NickName')
         if not self.remark:
             self.remark = self.nickName
+        self.remark = re.sub(r'[\/:*?"<>|]', '_', self.remark)
         self.smallHeadImgUrl = contact_info.get('smallHeadImgUrl')
         self.smallHeadImgBLOG = b''
         self.avatar = QPixmap()
-        self.avatar_path = 'D:\Project\Python\WeChatMsg\\app\data\icons\default_avatar.svg'
+        self.avatar_path = Icon.Default_avatar_path
 
     def set_avatar(self, img_bytes):
         if not img_bytes:
@@ -93,13 +62,19 @@ class ContactPC:
             self.avatar.loadFromData(img_bytes, format='PNG')
         else:
             self.avatar.loadFromData(img_bytes, format='jfif')
-
         self.avatar.scaled(60, 60, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
-
-class Group(Person):
-    def __init__(self, wxid: str):
-        super(Group, self).__init__(wxid)
+    def save_avatar(self, path=None):
+        if not self.avatar:
+            return
+        if path:
+            save_path = path
+        else:
+            os.makedirs('./data/avatar', exist_ok=True)
+            save_path = os.path.join(f'data/avatar/', self.wxid + '.png')
+        self.avatar_path = save_path
+        self.avatar.save(save_path)
+        print('保存头像', save_path)
 
 
 if __name__ == '__main__':
