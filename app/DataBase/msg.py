@@ -57,6 +57,21 @@ class Msg:
                     lock.release()
 
     def get_messages(self, username_):
+        '''
+        return list
+            a[0]: localId,
+            a[1]: talkerId, （和strtalker对应的，不是群聊信息发送人）
+            a[2]: type,
+            a[3]: subType,
+            a[4]: is_sender,
+            a[5]: timestamp,
+            a[6]: status, （没啥用）
+            a[7]: str_content,
+            a[8]: str_time, （格式化的时间）
+            a[9]: msgSvrId,
+            a[10]: BytesExtra,
+            a[11]: CompressContent,
+        '''
         if not self.open_flag:
             return None
         sql = '''
@@ -206,8 +221,8 @@ class Msg:
                     ('', '', ['', ''], ''),
                     ('', '', '', '')
                 ))
-        print(keyword,res)
         return res
+
     def get_contact(self, contacts):
         if not self.open_flag:
             return None
@@ -227,6 +242,7 @@ class Msg:
                 contacts[i].append(0)
         contacts.sort(key=lambda cur_contact: cur_contact[-1], reverse=True)
         return contacts
+
     def get_messages_by_days(self, username_, is_Annual_report_=False, year_='2023'):
         if is_Annual_report_:
             sql = '''
@@ -375,7 +391,7 @@ if __name__ == '__main__':
     msg.init_database()
     result = msg.get_message_by_num('wxid_vtz9jk9ulzjt22', 9999999)
     print(result)
-    result = msg.get_messages_by_type('wxid_vtz9jk9ulzjt22',49)
+    result = msg.get_messages_by_type('wxid_vtz9jk9ulzjt22', 49)
     for r in result:
         type_ = r[2]
         sub_type = r[3]
