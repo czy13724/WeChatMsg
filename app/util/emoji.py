@@ -13,7 +13,7 @@ import traceback
 import xml.etree.ElementTree as ET
 import sqlite3
 import threading
-
+from PyQt5.QtGui import QPixmap
 import requests
 
 from app.log import log, logger
@@ -144,8 +144,6 @@ class Emotion:
 
 @log
 def download(url, output_dir, name, thumb=False):
-    if not url:
-        return ':/icons/icons/404.png'
     resp = requests.get(url)
     byte = resp.content
     image_format = get_image_format(byte[:8])
@@ -176,9 +174,9 @@ def get_most_emoji(messages):
         except:
             dic[md5] = [1, emoji_info]
     md5_nums = [(num[0], key, num[1]) for key, num in dic.items()]
-    md5_nums.sort(key=lambda x: x[0],reverse=True)
+    md5_nums.sort(key=lambda x: x[0], reverse=True)
     if not md5_nums:
-        return '',0
+        return '', 0
     md5 = md5_nums[0][1]
     num = md5_nums[0][0]
     emoji_info = md5_nums[0][2]
@@ -197,7 +195,6 @@ def get_emoji(xml_string, thumb=True, output_path=root_path) -> str:
             prefix = 'th_' if thumb else ''
             file_path = os.path.join(output_path, prefix + md5 + f)
             if os.path.exists(file_path):
-                print('表情包已存在')
                 return file_path
         url = emoji_info['thumburl'] if thumb else emoji_info['cdnurl']
         if not url or url == "":
@@ -221,10 +218,31 @@ def get_emoji(xml_string, thumb=True, output_path=root_path) -> str:
             return output_path
         else:
             print("！！！未知表情包数据，信息：", xml_string, emoji_info, url)
-            return ""
+            output_path = os.path.join(output_path, '404.png')
+            if not os.path.exists(output_path):
+                QPixmap(':/icons/icons/404.png').save(output_path)
+            return output_path
     except:
         logger.error(traceback.format_exc())
-        return ""
+        output_path = os.path.join(output_path, "404.png")
+        if not os.path.exists(output_path):
+            QPixmap(':/icons/icons/404.png').save(output_path)
+        return output_path
+
+
+def get_emoji_path(xml_string, thumb=True, output_path=root_path) -> str:
+    try:
+        emoji_info = parser_xml(xml_string)
+        md5 = emoji_info['md5']
+        image_format = ['.png', '.gif', '.jpeg']
+        for f in image_format:
+            prefix = 'th_' if thumb else ''
+            file_path = os.path.join(output_path, prefix + md5 + f)
+            return file_path
+    except:
+        logger.error(traceback.format_exc())
+        output_path = os.path.join(output_path, "404.png")
+        return output_path
 
 
 if __name__ == '__main__':
