@@ -1,6 +1,7 @@
 import os
 import sqlite3
 
+
 def merge_MediaMSG_databases(source_paths, target_path):
     # 创建目标数据库连接
     target_conn = sqlite3.connect(target_path)
@@ -12,21 +13,21 @@ def merge_MediaMSG_databases(source_paths, target_path):
             if not os.path.exists(source_path):
                 break
             db = sqlite3.connect(source_path)
-            db.text_factory = str 
+            db.text_factory = str
             cursor = db.cursor()
-            sql = '''
-            SELECT Key,Reserved0,Buf,Reserved1,Reserved2 FROM Media;
-            '''
-            cursor.execute(sql)
-            result = cursor.fetchall()
             # 附加源数据库
             try:
+                sql = '''SELECT Key,Reserved0,Buf,Reserved1,Reserved2 FROM Media;'''
+                cursor.execute(sql)
+                result = cursor.fetchall()
                 target_cursor.executemany(
                     "INSERT INTO Media (Key,Reserved0,Buf,Reserved1,Reserved2)"
                     "VALUES(?,?,?,?,?)",
                     result)
             except sqlite3.IntegrityError:
                 print("有重复key", "跳过")
+            except sqlite3.OperationalError:
+                print("no such table: Media", "跳过")
             cursor.close()
             db.close()
         # 提交事务
@@ -41,6 +42,7 @@ def merge_MediaMSG_databases(source_paths, target_path):
         # 关闭目标数据库连接
         target_conn.close()
 
+
 def merge_databases(source_paths, target_path):
     # 创建目标数据库连接
     target_conn = sqlite3.connect(target_path)
@@ -52,21 +54,24 @@ def merge_databases(source_paths, target_path):
             if not os.path.exists(source_path):
                 break
             db = sqlite3.connect(source_path)
-            db.text_factory = str 
+            db.text_factory = str
             cursor = db.cursor()
-            sql = '''
-            SELECT TalkerId,MsgsvrID,Type,SubType,IsSender,CreateTime,Sequence,StrTalker,StrContent,DisplayContent,BytesExtra,CompressContent
-            FROM MSG;
-            '''
-            cursor.execute(sql)
-            result = cursor.fetchall()
-            # 附加源数据库
-            target_cursor.executemany(
-                "INSERT INTO MSG "
-                "(TalkerId,MsgsvrID,Type,SubType,IsSender,CreateTime,Sequence,StrTalker,StrContent,DisplayContent,"
-                "BytesExtra,CompressContent)"
-                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
-                result)
+            try:
+                sql = '''
+                    SELECT TalkerId,MsgsvrID,Type,SubType,IsSender,CreateTime,Sequence,StrTalker,StrContent,DisplayContent,BytesExtra,CompressContent
+                    FROM MSG;
+                '''
+                cursor.execute(sql)
+                result = cursor.fetchall()
+                # 附加源数据库
+                target_cursor.executemany(
+                    "INSERT INTO MSG "
+                    "(TalkerId,MsgsvrID,Type,SubType,IsSender,CreateTime,Sequence,StrTalker,StrContent,DisplayContent,"
+                    "BytesExtra,CompressContent)"
+                    "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                    result)
+            except:
+                pass
             cursor.close()
             db.close()
         # 提交事务
