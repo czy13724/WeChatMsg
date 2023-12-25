@@ -16,8 +16,9 @@ from ..person import MePC
 from ..util import path
 import shutil
 from ..util.compress_content import parser_reply
-from ..util.emoji import get_emoji, get_emoji_path
+from ..util.emoji import get_emoji, get_emoji_path, get_emoji_url
 from ..util.image import get_image_path, get_image
+from ..util.file import get_file
 
 os.makedirs('./data/聊天记录', exist_ok=True)
 
@@ -30,6 +31,11 @@ def makedirs(path):
     os.makedirs(os.path.join(path, 'voice'), exist_ok=True)
     os.makedirs(os.path.join(path, 'file'), exist_ok=True)
     os.makedirs(os.path.join(path, 'avatar'), exist_ok=True)
+    file = './app/resources/data/file.png'
+    if not os.path.exists(file):
+        resource_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+        file = os.path.join(resource_dir, 'app', 'resources', 'data','file.png')
+    shutil.copy(file, path + '/file/file.png')
 
 
 def escape_js_and_html(input_str):
@@ -345,8 +351,9 @@ class ChildThread(QThread):
             displayname = MePC().name if is_send else self.contact.remark
         displayname = escape_js_and_html(displayname)
         if self.output_type == Output.HTML:
-            emoji_path = get_emoji_path(str_content, thumb=True, output_path=origin_docx_path + '/emoji')
-            emoji_path = './emoji/' + os.path.basename(emoji_path)
+            # emoji_path = get_emoji_path(str_content, thumb=True, output_path=origin_docx_path + '/emoji')
+            # emoji_path = './emoji/' + os.path.basename(emoji_path)
+            emoji_path = get_emoji_url(str_content, thumb=True)
             doc.write(
                 f'''{{ type:{3}, text: '{emoji_path}',is_send:{is_send},avatar_path:'{avatar}',timestamp:{timestamp},is_chatroom:{is_chatroom},displayname:'{displayname}'}},'''
             )
@@ -358,6 +365,36 @@ class ChildThread(QThread):
 
     def wx_file(self, doc, isSend, content, status):
         return
+
+    def file(self, doc, message):
+        origin_docx_path = f"{os.path.abspath('.')}/data/聊天记录/{self.contact.remark}"
+        bytesExtra = message[10]
+        str_time = message[8]
+        is_send = message[4]
+        timestamp = message[5]
+        is_chatroom = 1 if self.contact.is_chatroom else 0
+        if is_chatroom:
+            avatar = f"./avatar/{message[12].wxid}.png"
+        else:
+            avatar = f"./avatar/{MePC().wxid if is_send else self.contact.wxid}.png"
+        if is_chatroom:
+            if is_send:
+                displayname = MePC().name
+            else:
+                displayname = message[12].remark
+        else:
+            displayname = MePC().name if is_send else self.contact.remark
+        displayname = escape_js_and_html(displayname)
+        if self.output_type == Output.HTML:
+            link = get_file(bytesExtra, thumb=True, output_path=origin_docx_path + '/file')
+            file_name = ''
+            file_path = './file/file.png'
+            if link != "":
+                file_name = os.path.basename(link)
+                link = './file/' + file_name
+            doc.write(
+                f'''{{ type:49, text: '{file_path}',is_send:{is_send},avatar_path:'{avatar}',timestamp:{timestamp},is_chatroom:{is_chatroom},displayname:'{displayname}',link: '{link}',sub_type:6,file_name: '{file_name}'}},'''
+            )
 
     def retract_message(self, doc, isSend, content, status):
         return
@@ -511,16 +548,18 @@ class ChildThread(QThread):
     def to_html_(self):
         origin_docx_path = f"{os.path.abspath('.')}/data/聊天记录/{self.contact.remark}"
         makedirs(origin_docx_path)
+
         if self.contact.is_chatroom:
             packagemsg = PackageMsg()
             messages = packagemsg.get_package_message_by_wxid(self.contact.wxid)
         else:
             messages = msg_db.get_messages(self.contact.wxid)
         filename = f"{os.path.abspath('.')}/data/聊天记录/{self.contact.remark}/{self.contact.remark}.html"
-        file_path = './app/resources/template.html'
+        file_path = './app/resources/data/template.html'
         if not os.path.exists(file_path):
             resource_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
-            file_path = os.path.join(resource_dir, 'app', 'resources', 'template.html')
+            file_path = os.path.join(resource_dir, 'app', 'resources', 'data','template.html')
+
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
             html_head, html_end = content.split('/*注意看这是分割线*/')
@@ -569,6 +608,8 @@ class ChildThread(QThread):
                 self.system_msg(f, message)
             elif type_ == 49 and sub_type == 57 and self.message_types.get(1):
                 self.refermsg(f, message)
+            elif type_ == 49 and sub_type == 6 and self.message_types.get(4906):
+                self.file(f, message)
         f.write(html_end)
         f.close()
         self.okSignal.emit(1)
@@ -653,7 +694,8 @@ class OutputEmoji(QThread):
         for message in messages:
             str_content = message[7]
             try:
-                emoji_path = get_emoji(str_content, thumb=True, output_path=origin_docx_path + '/emoji')
+                pass
+                # emoji_path = get_emoji(str_content, thumb=True, output_path=origin_docx_path + '/emoji')
             except:
                 logger.error(traceback.format_exc())
             finally:
@@ -750,3 +792,28 @@ class OutputImageChild(QThread):
                 self.progressSignal.emit(1)
         self.okSingal.emit(47)
         print('图片子线程完成')
+
+
+if __name__ == "__main__":
+    from app.DataBase import micro_msg_db, misc_db
+    from app.person import ContactPC
+    from PyQt5.QtGui import QGuiApplication
+    app = QGuiApplication([])
+    contact_info_list = micro_msg_db.get_contact_by_username("wxid_lhbdvh3cnn4h22")
+    contact_info = {
+        'UserName': contact_info_list[0],
+        'Alias': contact_info_list[1],
+        'Type': contact_info_list[2],
+        'Remark': contact_info_list[3],
+        'NickName': contact_info_list[4],
+        'smallHeadImgUrl': contact_info_list[7]
+    }
+    contact = ContactPC(contact_info)
+    contact.smallHeadImgBLOG = misc_db.get_avatar_buffer(contact.wxid)
+    contact.set_avatar(contact.smallHeadImgBLOG)
+    mess = {1: True, 3: True, 34: True, 43: True, 47: True, 10000: True}
+    MePC().name = "无题"
+    MePC().wx_dir = r"C:\Users\HUAWEI\Documents\WeChat Files\wxid_05rvkbftizq822"
+    MePC().wxid = "wxid_05rvkbftizq822"
+    ChildThread(contact, 2, mess).to_html_()
+    app.quit()
