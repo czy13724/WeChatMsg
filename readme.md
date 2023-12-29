@@ -1,33 +1,32 @@
 <h1 align="center">我的数据我做主</h1>
 <div align="center">
-<a href="https://memotrace.lc044.love/" target="_blank">
-    <img src="https://img.shields.io/badge/WeChat-留痕-blue.svg">
-</a>
-<a href="https://github.com/LC044/WeChatMsg/stargazers">
-    <img src="https://img.shields.io/github/stars/LC044/WeChatMsg.svg" />
-</a>
-    
-<!-- <a href="https://github.com/LC044/WeChatMsg/issues">
-      <img alt="Issues" src="https://img.shields.io/github/issues/LC044/WeChatMsg?color=0088ff" />
-</a> -->
-
-<a>
-    <img alt="GitHub forks" src="https://img.shields.io/github/forks/LC044/WeChatMsg?color=eb6ea5">
-</a>
-<a href="https://memotrace.lc044.love/" target="_blank">
-    <img src="https://img.shields.io/github/license/LC044/WeChatMsg" />
-</a>
-<a href="https://github.com/LC044/WeChatMsg/releases" target="_blank">
-    <img alt="GitHub release (with filter)" src="https://img.shields.io/github/v/release/LC044/WeChatMsg">
-</a>
-<a href="https://memotrace.lc044.love/" target="_blank">
-    <img alt="GitHub all releases" src="https://img.shields.io/github/downloads/LC044/WeChatMsg/total?color=3eb370">
-</a>
+    <a href="https://memotrace.lc044.love/" target="_blank">
+        <img src="https://img.shields.io/badge/WeChat-留痕-blue.svg">
+    </a>
+    <a href="https://github.com/LC044/WeChatMsg/stargazers">
+        <img src="https://img.shields.io/github/stars/LC044/WeChatMsg.svg" />
+    </a>
+    <a href="https://memotrace.lc044.love/" target="_blank">
+        <img alt="GitHub forks" src="https://img.shields.io/github/forks/LC044/WeChatMsg?color=eb6ea5">
+    </a>
+    <a target="_blank" href="https://memotrace.lc044.love/">
+        <img alt="Hits" src="https://hits.b3log.org/LC044/memotrace.svg">
+    </a>
+    <a href="https://memotrace.lc044.love/" target="_blank">
+        <img src="https://img.shields.io/github/license/LC044/WeChatMsg" />
+    </a>
+    <a href="https://github.com/LC044/WeChatMsg/releases" target="_blank">
+        <img alt="GitHub release (with filter)" src="https://img.shields.io/github/v/release/LC044/WeChatMsg">
+    </a>
+    <a href="https://memotrace.lc044.love/" target="_blank">
+        <img alt="GitHub all releases" src="https://img.shields.io/github/downloads/LC044/WeChatMsg/total?color=3eb370">
+    </a>
 </div>
 
 <div align="center">
-<a href="https://memotrace.lc044.love/"><img src="https://memotrace.lc044.love/img/logo%20-%20%E5%89%AF%E6%9C%AC.png" height="240"/></a>
+    <a href="https://memotrace.lc044.love/"><img src="https://memotrace.lc044.love/img/logo%20-%20%E5%89%AF%E6%9C%AC.png" height="240"/></a>
 </div>
+
 <blockquote>
 <div style="background-color: #eaf7ea; border-radius: 10px; padding: 20px; position: relative;">
   <div style="position: relative;">
@@ -55,20 +54,22 @@
     - 拍一拍等系统消息✅
 - 导出聊天记录
     - sqlite数据库✅
-    - HTML(文本、图片、视频、表情包、语音)✅
+    - HTML(文本、图片、视频、表情包、语音、文件、系统消息)✅
     - CSV文档✅
     - TXT文档✅ 
     - Word文档✅ 
 - 分析聊天数据，做成可视化年报(急需前端大佬提供优质模板)
 - 🔥**项目持续更新中**
 - 开发计划
-    - 一键导出全部表情包、文件、图片、视频、语音
-    - 合并多个备份数据
-    - 批量导出数据
-    - 文件
-    - 个人年度报告
-    - 群组年度报告
+  - 自主选择年度报告年份
+  - 一键导出全部表情包、文件、图片、视频、语音
+  - 合并多个备份数据
+  - 批量导出数据
+  - 个人年度报告
+  - 群组年度报告
+  - 按日期、关键词索引
 - 小伙伴们想要其他功能可以留言哦📬
+- 🔥项目正处于并将长期处于发展阶段，你所期望的未来都会实现，可关注文末公众号持续关注项目更新动态
 
 ## 🥤效果
 
