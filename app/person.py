@@ -28,6 +28,7 @@ class MePC:
         self.wx_dir = ''
         self.name = ''
         self.mobile = ''
+        self.smallHeadImgUrl = ''
 
     def set_avatar(self, img_bytes):
         if not img_bytes:
@@ -60,7 +61,7 @@ class ContactPC:
         self.nickName = contact_info.get('NickName')
         if not self.remark:
             self.remark = self.nickName
-        self.remark = re.sub(r'[\/:*?"<>|]', '_', self.remark)
+        self.remark = re.sub(r'[\/:*?"<>|\s]', '_', self.remark)
         self.smallHeadImgUrl = contact_info.get('smallHeadImgUrl')
         self.smallHeadImgBLOG = b''
         self.avatar = QPixmap()
