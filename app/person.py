@@ -1,10 +1,11 @@
+"""
+定义各种联系人
+"""
+
 import os.path
 import re
 from typing import Dict
-
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
-
 from app.ui.Icon import Icon
 
 
@@ -19,16 +20,11 @@ def singleton(cls):
     return inner
 
 
-@singleton
-class MePC:
+class Person:
     def __init__(self):
-        self.avatar = QPixmap(Icon.Default_avatar_path)
-        self.avatar_path = ':/icons/icons/default_avatar.svg'
-        self.wxid = ''
-        self.wx_dir = ''
-        self.name = ''
-        self.mobile = ''
-        self.smallHeadImgUrl = ''
+        self.avatar_path = None
+        self.avatar = None
+        self.avatar_path_qt = Icon.Default_avatar_path
 
     def set_avatar(self, img_bytes):
         if not img_bytes:
@@ -44,6 +40,9 @@ class MePC:
             return
         if path:
             save_path = path
+            if os.path.exists(save_path):
+                self.avatar_path = save_path
+                return save_path
         else:
             os.makedirs('./data/avatar', exist_ok=True)
             save_path = os.path.join(f'data/avatar/', self.wxid + '.png')
@@ -52,7 +51,19 @@ class MePC:
         print('保存头像', save_path)
 
 
-class ContactPC:
+@singleton
+class Me(Person):
+    def __init__(self):
+        self.avatar = QPixmap(Icon.Default_avatar_path)
+        self.avatar_path = ':/icons/icons/default_avatar.svg'
+        self.wxid = ''
+        self.wx_dir = ''
+        self.name = ''
+        self.mobile = ''
+        self.smallHeadImgUrl = ''
+
+
+class Contact(Person):
     def __init__(self, contact_info: Dict):
         self.wxid = contact_info.get('UserName')
         self.remark = contact_info.get('Remark')
@@ -68,29 +79,8 @@ class ContactPC:
         self.avatar_path = Icon.Default_avatar_path
         self.is_chatroom = self.wxid.__contains__('@chatroom')
 
-    def set_avatar(self, img_bytes):
-        if not img_bytes:
-            self.avatar.load(Icon.Default_avatar_path)
-            return
-        if img_bytes[:4] == b'\x89PNG':
-            self.avatar.loadFromData(img_bytes, format='PNG')
-        else:
-            self.avatar.loadFromData(img_bytes, format='jfif')
-        self.avatar.scaled(60, 60, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
-    def save_avatar(self, path=None):
-        if not self.avatar:
-            return
-        if path:
-            save_path = path
-        else:
-            os.makedirs('./data/avatar', exist_ok=True)
-            save_path = os.path.join(f'data/avatar/', self.wxid + '.png')
-        self.avatar_path = save_path
-        self.avatar.save(save_path)
-        print('保存头像', save_path)
-
-class ContactDefault:
+class ContactDefault(Person):
     def __init__(self, wxid=""):
         self.avatar = QPixmap(Icon.Default_avatar_path)
         self.avatar_path = ':/icons/icons/default_avatar.svg'
@@ -101,31 +91,31 @@ class ContactDefault:
         self.smallHeadImgUrl = ""
         self.smallHeadImgBLOG = b''
         self.is_chatroom = False
-    
-    def set_avatar(self, img_bytes):
-        if not img_bytes:
-            self.avatar.load(Icon.Default_avatar_path)
-            return
-        if img_bytes[:4] == b'\x89PNG':
-            self.avatar.loadFromData(img_bytes, format='PNG')
-        else:
-            self.avatar.loadFromData(img_bytes, format='jfif')
-        self.avatar.scaled(60, 60, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
-    def save_avatar(self, path=None):
-        if not self.avatar:
-            return
-        if path:
-            save_path = path
-        else:
-            os.makedirs('./data/avatar', exist_ok=True)
-            save_path = os.path.join(f'data/avatar/', self.wxid + '.png')
-        self.avatar_path = save_path
-        self.avatar.save(save_path)
-        print('保存头像', save_path)
+
+class Contacts:
+    def __init__(self):
+        self.contacts: Dict[str:Contact] = {}
+
+    def add(self, wxid, contact: Contact):
+        if wxid not in contact:
+            self.contacts[wxid] = contact
+
+    def get(self, wxid: str) -> Contact:
+        return self.contacts.get(wxid)
+
+    def remove(self, wxid: str):
+        return self.contacts.pop(wxid)
+
+    def save_avatar(self, avatar_dir: str = './data/avatar/'):
+        for wxid, contact in self.contacts.items():
+            avatar_path = os.path.join(avatar_dir, wxid + '.png')
+            if os.path.exists(avatar_path):
+                continue
+            contact.save_avatar(avatar_path)
 
 
 if __name__ == '__main__':
-    p1 = MePC()
-    p2 = MePC()
+    p1 = Me()
+    p2 = Me()
     print(p1 == p2)

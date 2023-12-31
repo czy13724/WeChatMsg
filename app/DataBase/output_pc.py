@@ -1,30 +1,29 @@
 import csv
 import html
 import os
+import shutil
 import sys
 import time
 import traceback
 from re import findall
+
+import docx
 from PyQt5.QtCore import pyqtSignal, QThread
 from PyQt5.QtWidgets import QFileDialog
-from docx.oxml.ns import qn
-
-from . import msg_db
-from .package_msg import PackageMsg
-from ..DataBase import hard_link_db
-from ..DataBase import media_msg_db
-from ..log import logger
-from ..person import MePC
-from ..util import path
-import shutil
-from ..util.compress_content import parser_reply
-from ..util.emoji import get_emoji_url
-from ..util.image import get_image_path, get_image, get_image_abs_path
-from ..util.file import get_file
-import docx
 from docx import shared
 from docx.enum.table import WD_ALIGN_VERTICAL
 from docx.enum.text import WD_COLOR_INDEX, WD_PARAGRAPH_ALIGNMENT
+from docx.oxml.ns import qn
+
+from .package_msg import PackageMsg
+from ..DataBase import media_msg_db, hard_link_db, micro_msg_db, msg_db
+from ..log import logger
+from ..person import Me
+from ..util import path
+from ..util.compress_content import parser_reply
+from ..util.emoji import get_emoji_url
+from ..util.file import get_file
+from ..util.image import get_image_path, get_image, get_image_abs_path
 
 os.makedirs('./data/聊天记录', exist_ok=True)
 
@@ -105,7 +104,23 @@ class Output(QThread):
     def progress(self, value):
         self.progressSignal.emit(value)
 
+    def output_image(self):
+        """
+        导出全部图片
+        @return:
+        """
+        return
+    def output_emoji(self):
+        """
+        导出全部表情包
+        @return:
+        """
+        return
     def to_csv_all(self):
+        """
+        导出全部聊天记录到CSV
+        @return:
+        """
         origin_docx_path = f"{os.path.abspath('.')}/data/聊天记录/"
         os.makedirs(origin_docx_path, exist_ok=True)
         filename = QFileDialog.getSaveFileName(None, "save file", os.path.join(os.getcwd(), 'messages.csv'),
@@ -129,6 +144,10 @@ class Output(QThread):
         self.okSignal.emit(1)
 
     def contact_to_csv(self):
+        """
+        导出联系人到CSV
+        @return:
+        """
         filename = QFileDialog.getSaveFileName(None, "save file", os.path.join(os.getcwd(), 'contacts.csv'),
                                                "csv files (*.csv);;all files(*.*)")
         if not filename[0]:
@@ -193,8 +212,14 @@ class Output(QThread):
                 self.output_image.start()
 
     def count_finish_num(self, num):
+        """
+        记录子线程完成个数
+        @param num:
+        @return:
+        """
         self.num += 1
         if self.num == self.total_num:
+            # 所有子线程都完成之后就发送完成信号
             self.okSignal.emit(1)
 
     def cancel(self):
@@ -241,23 +266,26 @@ class ChildThread(QThread):
             return True
         return False
 
-    def get_avatar_path(self, is_send, message,is_absolute_path=False) -> str:
+    def get_avatar_path(self, is_send, message, is_absolute_path=False) -> str:
         if self.contact.is_chatroom:
             avatar = message[12].smallHeadImgUrl
         else:
-            avatar = MePC().smallHeadImgUrl if is_send else self.contact.smallHeadImgUrl
+            avatar = Me().smallHeadImgUrl if is_send else self.contact.smallHeadImgUrl
         if is_absolute_path:
-            avatar = f"{os.path.abspath('.')}/data/聊天记录/{self.contact.remark}"+avatar
+            if self.contact.is_chatroom:
+                avatar = message[12].avatar_path
+            else:
+                avatar = Me().avatar_path if is_send else self.contact.avatar_path
         return avatar
 
     def get_display_name(self, is_send, message) -> str:
         if self.contact.is_chatroom:
             if is_send:
-                display_name = MePC().name
+                display_name = Me().name
             else:
                 display_name = message[12].remark
         else:
-            display_name = MePC().name if is_send else self.contact.remark
+            display_name = Me().name if is_send else self.contact.remark
         return escape_js_and_html(display_name)
 
     def text(self, doc, message):
@@ -268,7 +296,7 @@ class ChildThread(QThread):
         timestamp = message[5]
         is_chatroom = 1 if self.contact.is_chatroom else 0
 
-        display_name = self.get_display_name(is_send,message)
+        display_name = self.get_display_name(is_send, message)
         if self.output_type == Output.HTML:
             avatar = self.get_avatar_path(is_send, message)
             str_content = escape_js_and_html(str_content)
@@ -281,7 +309,7 @@ class ChildThread(QThread):
                 f'''{str_time} {name}\n{str_content}\n\n'''
             )
         elif self.output_type == Output.DOCX:
-            avatar = self.get_avatar_path(is_send,message,True)
+            avatar = self.get_avatar_path(is_send, message, True)
             content_cell = self.create_table(doc, is_send, avatar)
             content_cell.paragraphs[0].add_run(str_content)
             content_cell.paragraphs[0].font_size = shared.Inches(0.5)
@@ -300,13 +328,13 @@ class ChildThread(QThread):
         timestamp = message[5]
         is_chatroom = 1 if self.contact.is_chatroom else 0
         avatar = self.get_avatar_path(is_send, message)
-        display_name = self.get_display_name(is_send,message)
+        display_name = self.get_display_name(is_send, message)
         if self.output_type == Output.HTML:
             str_content = escape_js_and_html(str_content)
             image_path = hard_link_db.get_image(str_content, BytesExtra, thumb=False)
-            if not os.path.exists(os.path.join(MePC().wx_dir, image_path)):
+            if not os.path.exists(os.path.join(Me().wx_dir, image_path)):
                 image_thumb_path = hard_link_db.get_image(str_content, BytesExtra, thumb=True)
-                if not os.path.exists(os.path.join(MePC().wx_dir, image_thumb_path)):
+                if not os.path.exists(os.path.join(Me().wx_dir, image_thumb_path)):
                     return
                 image_path = image_thumb_path
             image_path = get_image_path(image_path, base_path=f'/data/聊天记录/{self.contact.remark}/image')
@@ -318,14 +346,14 @@ class ChildThread(QThread):
                 f'''{str_time} {display_name}\n[图片]\n\n'''
             )
         elif self.output_type == Output.DOCX:
-            avatar = self.get_avatar_path(is_send,message,True)
+            avatar = self.get_avatar_path(is_send, message, True)
             content = self.create_table(doc, is_send, avatar)
             run = content.paragraphs[0].add_run()
             str_content = escape_js_and_html(str_content)
             image_path = hard_link_db.get_image(str_content, BytesExtra, thumb=True)
-            if not os.path.exists(os.path.join(MePC().wx_dir, image_path)):
+            if not os.path.exists(os.path.join(Me().wx_dir, image_path)):
                 image_thumb_path = hard_link_db.get_image(str_content, BytesExtra, thumb=False)
-                if not os.path.exists(os.path.join(MePC().wx_dir, image_thumb_path)):
+                if not os.path.exists(os.path.join(Me().wx_dir, image_thumb_path)):
                     return
                 image_path = image_thumb_path
             image_path = get_image_abs_path(image_path, base_path=f'/data/聊天记录/{self.contact.remark}/image')
@@ -361,7 +389,7 @@ class ChildThread(QThread):
                 f'''{str_time} {display_name}\n[语音]\n\n'''
             )
         elif self.output_type == Output.DOCX:
-            avatar = self.get_avatar_path(is_send,message,True)
+            avatar = self.get_avatar_path(is_send, message, True)
             content_cell = self.create_table(doc, is_send, avatar)
             content_cell.paragraphs[0].add_run('【表情包】')
             content_cell.paragraphs[0].font_size = shared.Inches(0.5)
@@ -369,6 +397,7 @@ class ChildThread(QThread):
                 p = content_cell.paragraphs[0]
                 p.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT
             doc.add_paragraph()
+
     def emoji(self, doc, message):
         str_content = message[7]
         str_time = message[8]
@@ -387,7 +416,7 @@ class ChildThread(QThread):
                 f'''{str_time} {display_name}\n[表情包]\n\n'''
             )
         elif self.output_type == Output.DOCX:
-            avatar = self.get_avatar_path(is_send,message,True)
+            avatar = self.get_avatar_path(is_send, message, True)
             content_cell = self.create_table(doc, is_send, avatar)
             content_cell.paragraphs[0].add_run('【表情包】')
             content_cell.paragraphs[0].font_size = shared.Inches(0.5)
@@ -420,7 +449,7 @@ class ChildThread(QThread):
                 f'''{str_time} {display_name}\n[文件]\n\n'''
             )
         elif self.output_type == Output.DOCX:
-            avatar = self.get_avatar_path(is_send,message,True)
+            avatar = self.get_avatar_path(is_send, message, True)
             content_cell = self.create_table(doc, is_send, avatar)
             content_cell.paragraphs[0].add_run('【文件】')
             content_cell.paragraphs[0].font_size = shared.Inches(0.5)
@@ -465,7 +494,7 @@ class ChildThread(QThread):
                     f'''{str_time} {display_name}\n{content.get('title')}\n引用:未知\n\n'''
                 )
         elif self.output_type == Output.DOCX:
-            avatar = self.get_avatar_path(is_send,message,True)
+            avatar = self.get_avatar_path(is_send, message, True)
             content_cell = self.create_table(doc, is_send, avatar)
             content_cell.paragraphs[0].add_run(content.get('title'))
             content_cell.paragraphs[0].font_size = shared.Inches(0.5)
@@ -537,7 +566,7 @@ class ChildThread(QThread):
                 return
             if video_path is None and image_path is None:
                 return
-            video_path = f'{MePC().wx_dir}/{video_path}'
+            video_path = f'{Me().wx_dir}/{video_path}'
             if os.path.exists(video_path):
                 new_path = origin_docx_path + '/video/' + os.path.basename(video_path)
                 if not os.path.exists(new_path):
@@ -552,7 +581,7 @@ class ChildThread(QThread):
                 f'''{str_time} {display_name}\n[视频]\n\n'''
             )
         elif self.output_type == Output.DOCX:
-            avatar = self.get_avatar_path(is_send,message,True)
+            avatar = self.get_avatar_path(is_send, message, True)
             content_cell = self.create_table(doc, is_send, avatar)
             content_cell.paragraphs[0].add_run('【视频】')
             content_cell.paragraphs[0].font_size = shared.Inches(0.5)
@@ -611,7 +640,6 @@ class ChildThread(QThread):
             # 写入数据
             writer.writerows(messages)
         self.okSignal.emit('ok')
-
 
     def to_html_(self):
         origin_docx_path = f"{os.path.abspath('.')}/data/聊天记录/{self.contact.remark}"
@@ -713,21 +741,19 @@ class ChildThread(QThread):
             messages = packagemsg.get_package_message_by_wxid(self.contact.wxid)
         else:
             messages = msg_db.get_messages(self.contact.wxid)
-
-        MePC().avatar.save(os.path.join(f"{origin_docx_path}/avatar/{MePC().wxid}.png"))
+        Me().save_avatar(os.path.join(f"{origin_docx_path}/avatar/{Me().wxid}.png"))
         if self.contact.is_chatroom:
             for message in messages:
                 if message[4]:  # is_send
                     continue
                 try:
                     chatroom_avatar_path = f"{origin_docx_path}/avatar/{message[12].wxid}.png"
-                    if not os.path.exists(chatroom_avatar_path):
-                        message[12].avatar.save(chatroom_avatar_path)
+                    message[12].save_avatar(chatroom_avatar_path)
                 except:
                     print(message)
                     pass
         else:
-            self.contact.avatar.save(os.path.join(f"{origin_docx_path}/avatar/{self.contact.wxid}.png"))
+            self.contact.save_avatar(os.path.join(f"{origin_docx_path}/avatar/{self.contact.wxid}.png"))
         self.rangeSignal.emit(len(messages))
         for index, message in enumerate(messages):
             type_ = message[2]
@@ -767,8 +793,6 @@ class ChildThread(QThread):
             self.to_csv()
         elif self.output_type == Output.HTML:
             self.to_html_()
-        elif self.output_type == Output.CSV_ALL:
-            self.to_csv_all()
         elif self.output_type == Output.TXT:
             self.to_txt()
 
@@ -777,6 +801,9 @@ class ChildThread(QThread):
 
 
 class OutputMedia(QThread):
+    """
+    导出语音消息
+    """
     okSingal = pyqtSignal(int)
     progressSignal = pyqtSignal(int)
 
@@ -800,6 +827,9 @@ class OutputMedia(QThread):
 
 
 class OutputEmoji(QThread):
+    """
+    导出表情包
+    """
     okSingal = pyqtSignal(int)
     progressSignal = pyqtSignal(int)
 
@@ -823,6 +853,9 @@ class OutputEmoji(QThread):
 
 
 class OutputImage(QThread):
+    """
+    导出图片
+    """
     okSingal = pyqtSignal(int)
     progressSignal = pyqtSignal(int)
 
@@ -849,9 +882,9 @@ class OutputImage(QThread):
             timestamp = message[5]
             try:
                 image_path = hard_link_db.get_image(str_content, BytesExtra, thumb=False)
-                if not os.path.exists(os.path.join(MePC().wx_dir, image_path)):
+                if not os.path.exists(os.path.join(Me().wx_dir, image_path)):
                     image_thumb_path = hard_link_db.get_image(str_content, BytesExtra, thumb=True)
-                    if not os.path.exists(os.path.join(MePC().wx_dir, image_thumb_path)):
+                    if not os.path.exists(os.path.join(Me().wx_dir, image_thumb_path)):
                         continue
                     image_path = image_thumb_path
                 image_path = get_image(image_path, base_path=f'/data/聊天记录/{self.contact.remark}/image')
@@ -893,9 +926,9 @@ class OutputImageChild(QThread):
             timestamp = message[5]
             try:
                 image_path = hard_link_db.get_image(str_content, BytesExtra, thumb=False)
-                if not os.path.exists(os.path.join(MePC().wx_dir, image_path)):
+                if not os.path.exists(os.path.join(Me().wx_dir, image_path)):
                     image_thumb_path = hard_link_db.get_image(str_content, BytesExtra, thumb=True)
-                    if not os.path.exists(os.path.join(MePC().wx_dir, image_thumb_path)):
+                    if not os.path.exists(os.path.join(Me().wx_dir, image_thumb_path)):
                         continue
                     image_path = image_thumb_path
                 image_path = get_image(image_path, base_path=f'/data/聊天记录/{self.contact.remark}/image')
@@ -912,26 +945,4 @@ class OutputImageChild(QThread):
 
 
 if __name__ == "__main__":
-    from app.DataBase import micro_msg_db, misc_db
-    from app.person import ContactPC
-    from PyQt5.QtGui import QGuiApplication
-
-    app = QGuiApplication([])
-    contact_info_list = micro_msg_db.get_contact_by_username("wxid_lhbdvh3cnn4h22")
-    contact_info = {
-        'UserName': contact_info_list[0],
-        'Alias': contact_info_list[1],
-        'Type': contact_info_list[2],
-        'Remark': contact_info_list[3],
-        'NickName': contact_info_list[4],
-        'smallHeadImgUrl': contact_info_list[7]
-    }
-    contact = ContactPC(contact_info)
-    contact.smallHeadImgBLOG = misc_db.get_avatar_buffer(contact.wxid)
-    contact.set_avatar(contact.smallHeadImgBLOG)
-    mess = {1: True, 3: True, 34: True, 43: True, 47: True, 10000: True}
-    MePC().name = "无题"
-    MePC().wx_dir = r"C:\Users\HUAWEI\Documents\WeChat Files\wxid_05rvkbftizq822"
-    MePC().wxid = "wxid_05rvkbftizq822"
-    ChildThread(contact, 2, mess).to_html_()
-    app.quit()
+    pass
