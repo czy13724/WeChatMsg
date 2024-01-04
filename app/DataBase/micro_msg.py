@@ -43,9 +43,10 @@ class MicroMsg:
             return None
         try:
             lock.acquire(True)
-            sql = '''SELECT UserName, Alias, Type, Remark, NickName, PYInitial, RemarkPYInitial, ContactHeadImgUrl.smallHeadImgUrl, ContactHeadImgUrl.bigHeadImgUrl
+            sql = '''SELECT UserName, Alias, Type, Remark, NickName, PYInitial, RemarkPYInitial, ContactHeadImgUrl.smallHeadImgUrl, ContactHeadImgUrl.bigHeadImgUrl,ExTraBuf,COALESCE(ContactLabel.LabelName, 'None') AS labelName
                     FROM Contact
                     INNER JOIN ContactHeadImgUrl ON Contact.UserName = ContactHeadImgUrl.usrName
+                    LEFT JOIN ContactLabel ON Contact.LabelIDList = ContactLabel.LabelId
                     WHERE (Type!=4)
                         AND NickName != ''
                     ORDER BY 
@@ -67,15 +68,17 @@ class MicroMsg:
         try:
             lock.acquire(True)
             sql = '''
-                   SELECT UserName, Alias, Type, Remark, NickName, PYInitial, RemarkPYInitial, ContactHeadImgUrl.smallHeadImgUrl, ContactHeadImgUrl.bigHeadImgUrl,ExTraBuf
+                   SELECT UserName, Alias, Type, Remark, NickName, PYInitial, RemarkPYInitial, ContactHeadImgUrl.smallHeadImgUrl, ContactHeadImgUrl.bigHeadImgUrl,ExTraBuf,ContactLabel.LabelName
                    FROM Contact
                    INNER JOIN ContactHeadImgUrl ON Contact.UserName = ContactHeadImgUrl.usrName
+                   LEFT JOIN ContactLabel ON Contact.LabelIDList = ContactLabel.LabelId
                    WHERE UserName = ?
                 '''
             self.cursor.execute(sql, [username])
             result = self.cursor.fetchone()
         finally:
             lock.release()
+
         return result
 
     def get_chatroom_info(self, chatroomname):
@@ -107,4 +110,16 @@ class MicroMsg:
 
 
 if __name__ == '__main__':
-    pass
+    db_path = "./app/database/Msg/MicroMsg.db"
+    msg = MicroMsg()
+    msg.init_database()
+    contacts = msg.get_contact()
+    from app.DataBase.hard_link import decodeExtraBuf
+
+    s = {'wxid_vtz9jk9ulzjt22','wxid_zu9l4wxdv1pa22', 'wxid_0o18ef858vnu22','wxid_8piw6sb4hvfm22','wxid_e7ypfycxpnu322','wxid_oxmg02c8kwxu22','wxid_7pp2fblq7hkq22','wxid_h1n9niofgyci22'}
+    for contact in contacts:
+        if contact[0] in s:
+            print(contact[:7])
+            buf = contact[9]
+            info = decodeExtraBuf(buf)
+            print(info)

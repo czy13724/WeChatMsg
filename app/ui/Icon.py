@@ -1,4 +1,4 @@
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 
 from app.resources import resource_rc
 
@@ -9,7 +9,7 @@ class Icon:
     Default_avatar_path = ':/icons/icons/default_avatar.svg'
     Default_image_path = ':/icons/icons/404.png'
     logo_path = ':/icons/icons/logo99.png'
-    logo_ico_path = ':/icons/icons/logo.ico'
+    logo_ico_path = ':/icons/icons/logo3.0.ico'
     MainWindow_Icon = QIcon(':/icons/icons/logo.svg')
     Default_avatar = QIcon(Default_avatar_path)
     Output = QIcon(':/icons/icons/output.svg')
@@ -32,4 +32,10 @@ class Icon:
     Folder_Icon = QIcon(':/icons/icons/folder.svg')
     Start_Icon = QIcon(':/icons/icons/start.svg')
     Decrypt_Icon = QIcon(':/icons/icons/decrypt.svg')
+    Man_Icon_path = ':/icons/icons/man.svg'
+    Woman_Icon_path = ':/icons/icons/woman.svg'
+    Man_Icon = QIcon(':/icons/icons/man.svg')
+    Woman_Icon = QIcon(':/icons/icons/woman.svg')
+    # Man_Icon_pixmap = QPixmap(Man_Icon_path)
+    # Woman_Icon_pixmap = QPixmap(Woman_Icon_path)
     # Logo_Icon = QIcon(':/icons/icons/logo.png')
