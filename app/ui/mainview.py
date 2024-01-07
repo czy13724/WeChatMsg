@@ -20,6 +20,7 @@ from . import mainwindow
 from app.ui.menu.about_dialog import AboutDialog
 from .chat import ChatWindow
 from .contact import ContactWindow
+from .menu.export import ExportDialog
 from .tool.tool_window import ToolWindow
 from ..DataBase.output_pc import Output
 from ..components.QCursorGif import QCursorGif
@@ -34,8 +35,6 @@ QWidget{
 QListWidget, QListView, QTreeWidget, QTreeView {
     outline: 0px;
 }
-
-
 QMenu::item:selected {
       color: black;
       background: rgb(230, 235, 240);
@@ -82,7 +81,7 @@ class MainWinController(QMainWindow, mainwindow.Ui_MainWindow,QCursorGif):
         self.setupUi(self)
         # 设置忙碌光标图片数组
         self.initCursor([':/icons/icons/Cursors/%d.png' %
-                         i for i in range(8)], self)
+                         i for i in range(8)])
         self.setCursorTimeout(100)
         # self.setWindowIcon(Icon.MainWindow_Icon)
         pixmap = QPixmap(Icon.logo_ico_path)
@@ -126,6 +125,8 @@ class MainWinController(QMainWindow, mainwindow.Ui_MainWindow,QCursorGif):
         self.action_output_CSV.triggered.connect(self.output)
         self.action_output_contacts.setIcon(Icon.Output)
         self.action_output_contacts.triggered.connect(self.output)
+        self.action_batch_export.setIcon(Icon.Output)
+        self.action_batch_export.triggered.connect(self.output)
         self.action_desc.setIcon(Icon.Help_Icon)
         self.action_help_contact.triggered.connect(
             lambda: QDesktopServices.openUrl(QUrl("https://blog.lc044.love/post/5")))
@@ -231,6 +232,9 @@ class MainWinController(QMainWindow, mainwindow.Ui_MainWindow,QCursorGif):
             self.outputThread.okSignal.connect(
                 lambda x: self.message('联系人导出成功'))
             self.outputThread.start()
+        elif self.sender() == self.action_batch_export:
+            dialog = ExportDialog(None, title='批量导出聊天记录', parent=self)
+            result = dialog.exec_()  # 使用exec_()获取用户的操作结果
 
     def message(self, msg):
         self.stopBusy()
