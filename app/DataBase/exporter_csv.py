@@ -3,7 +3,6 @@ import os
 
 from app.DataBase import msg_db
 from app.DataBase.output import ExporterBase
-from app.DataBase.package_msg import PackageMsg
 
 
 class CSVExporter(ExporterBase):
@@ -14,11 +13,7 @@ class CSVExporter(ExporterBase):
         columns = ['localId', 'TalkerId', 'Type', 'SubType',
                    'IsSender', 'CreateTime', 'Status', 'StrContent',
                    'StrTime', 'Remark', 'NickName', 'Sender']
-        if self.contact.is_chatroom:
-            packagemsg = PackageMsg()
-            messages = packagemsg.get_package_message_by_wxid(self.contact.wxid)
-        else:
-            messages = msg_db.get_messages(self.contact.wxid)
+        messages = msg_db.get_messages(self.contact.wxid)
         # 写入CSV文件
         with open(filename, mode='w', newline='', encoding='utf-8-sig') as file:
             writer = csv.writer(file)

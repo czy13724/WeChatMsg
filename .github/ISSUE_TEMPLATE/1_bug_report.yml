@@ -7,8 +7,8 @@ body:
     attributes:
       label: '👌 是否检查过没有类似issue'
       options:
-        - 是
         - 否
+        - 是
     validations:
       required: true
   - type: dropdown
@@ -40,6 +40,7 @@ body:
     attributes:
       label: '🐛 问题描述 | Bug Description'
       description: A clear and concise description of the bug.
+      value: '报错截图:'
     validations:
       required: true
   - type: textarea

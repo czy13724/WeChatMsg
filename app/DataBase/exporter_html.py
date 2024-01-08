@@ -8,7 +8,6 @@ from PyQt5.QtCore import pyqtSignal, QThread
 
 from app.DataBase import msg_db, hard_link_db, media_msg_db
 from app.DataBase.output import ExporterBase, escape_js_and_html
-from app.DataBase.package_msg import PackageMsg
 from app.log import logger
 from app.person import Me
 from app.util import path
@@ -276,11 +275,7 @@ class HtmlExporter(ExporterBase):
         )
 
     def export(self):
-        if self.contact.is_chatroom:
-            packagemsg = PackageMsg()
-            messages = packagemsg.get_package_message_by_wxid(self.contact.wxid)
-        else:
-            messages = msg_db.get_messages(self.contact.wxid)
+        messages = msg_db.get_messages(self.contact.wxid)
         filename = f"{os.path.abspath('.')}/data/聊天记录/{self.contact.remark}/{self.contact.remark}.html"
         file_path = './app/resources/data/template.html'
         if not os.path.exists(file_path):
