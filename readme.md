@@ -101,14 +101,14 @@
 
 网络有问题可移步国内网站Gitee:[https://gitee.com/lc044/WeChatMsg](https://gitee.com/lc044/WeChatMsg)
 
-小白可以先点个star⭐(💘项目不断更新中),然后去旁边[Release](https://github.com/LC044/WeChatMsg/releases)
+小白可以先点个star⭐(💘项目不断更新中),然后去旁边[Releases](https://github.com/LC044/WeChatMsg/releases)
 下载打包好的exe可执行文件，双击即可运行
 
 **⚠️注意：若出现闪退情况请右击选择用管理员身份运行exe程序，该程序不存在任何病毒，若杀毒软件提示有风险选择略过即可，key为none可重启电脑**
 
-**不懂编程的请移步[Release](https://github.com/LC044/WeChatMsg/releases)，下面的东西看了可能要长脑子啦🐶**
+**不懂编程的请移步[Releases](https://github.com/LC044/WeChatMsg/releases)，下面的东西看了可能要长脑子啦🐶**
 
-## PC版微信
+## 源码运行
 
 <details>
 
@@ -313,7 +313,7 @@ python main.py
 后续更新将会在公众号同步发布
 <div>
   <img src="https://blog.lc044.love/static/img/3fd32f1732a2c8f53a7eb923472b8f19.clipboard-2023-12-18.webp">
-  <img src="./doc/images/qq1.jpg" height="200">
+  <img src="./doc/images/qq2.jpg" height="200">
 </div>
 
 ## AI交流
