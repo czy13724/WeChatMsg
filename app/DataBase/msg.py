@@ -35,7 +35,8 @@ def parser_chatroom_message(messages):
         a[9]: msgSvrId,
         a[10]: BytesExtra,
         a[11]: CompressContent,
-        a[12]: msg_sender, （ContactPC 或 ContactDefault 类型，这个才是群聊里的信息发送人，不是群聊或者自己是发送者没有这个字段）
+        a[12]: DisplayContent,
+        a[13]: msg_sender, （ContactPC 或 ContactDefault 类型，这个才是群聊里的信息发送人，不是群聊或者自己是发送者没有这个字段）
     '''
     updated_messages = []  # 用于存储修改后的消息列表
     for row in messages:
@@ -157,13 +158,15 @@ class Msg:
             a[9]: msgSvrId,
             a[10]: BytesExtra,
             a[11]: CompressContent,
+            a[12]: DisplayContent,
+            a[13]: 联系人的类（如果是群聊就有，不是的话没有这个字段）
         """
         if not self.open_flag:
             return None
         if time_range:
             start_time, end_time = time_range
         sql = f'''
-            select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime,MsgSvrID,BytesExtra,CompressContent
+            select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime,MsgSvrID,BytesExtra,CompressContent,DisplayContent
             from MSG
             where StrTalker=?
             {'AND CreateTime>' + str(start_time) + ' AND CreateTime<' + str(end_time) if time_range else ''}
@@ -216,7 +219,7 @@ class Msg:
 
     def get_message_by_num(self, username_, local_id):
         sql = '''
-                select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime,MsgSvrID,BytesExtra,CompressContent
+                select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime,MsgSvrID,BytesExtra,CompressContent,DisplayContent
                 from MSG
                 where StrTalker = ? and localId < ?
                 order by CreateTime desc 
@@ -243,7 +246,7 @@ class Msg:
             start_time, end_time = time_range
         if year_ == 'all':
             sql = f'''
-                        select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime,MsgSvrID,BytesExtra,CompressContent
+                        select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime,MsgSvrID,BytesExtra,CompressContent,DisplayContent
                         from MSG
                         where StrTalker=? and Type=? 
                         {'AND CreateTime>' + str(start_time) + ' AND CreateTime<' + str(end_time) if time_range else ''}
@@ -257,7 +260,7 @@ class Msg:
                 lock.release()
         else:
             sql = '''
-                            select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime,MsgSvrID,BytesExtra,CompressContent
+                            select localId,TalkerId,Type,SubType,IsSender,CreateTime,Status,StrContent,strftime('%Y-%m-%d %H:%M:%S',CreateTime,'unixepoch','localtime') as StrTime,MsgSvrID,BytesExtra,CompressContent,DisplayContent
                             from MSG
                             where StrTalker=? and Type=? and strftime('%Y', CreateTime, 'unixepoch', 'localtime') = ?
                             order by CreateTime
