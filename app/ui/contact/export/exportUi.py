@@ -56,28 +56,40 @@ class Ui_Dialog(object):
         self.progressBar.setProperty("value", 24)
         self.progressBar.setObjectName("progressBar")
         self.verticalLayout.addWidget(self.progressBar)
-        self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
+        self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.label_time = QtWidgets.QLabel(Dialog)
         self.label_time.setText("")
         self.label_time.setObjectName("label_time")
-        self.horizontalLayout_4.addWidget(self.label_time)
-        self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
-        self.horizontalLayout_4.addLayout(self.horizontalLayout_5)
+        self.horizontalLayout_3.addWidget(self.label_time)
         self.label_process = QtWidgets.QLabel(Dialog)
         self.label_process.setText("")
         self.label_process.setObjectName("label_process")
-        self.horizontalLayout_4.addWidget(self.label_process)
-        self.verticalLayout.addLayout(self.horizontalLayout_4)
-        self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
+        self.horizontalLayout_3.addWidget(self.label_process)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_3.addItem(spacerItem1)
         self.btn_start = QtWidgets.QPushButton(Dialog)
+        self.btn_start.setStyleSheet("QPushButton{\n"
+"    background-color: rgb(233,233,233);\n"
+"    border-radius: 5px;\n"
+"    padding: 10px;\n"
+"}\n"
+"QPushButton:hover { \n"
+"    background-color: lightgray;\n"
+"border:1px solid rgb(31,156,220) ;\n"
+"}")
         self.btn_start.setObjectName("btn_start")
         self.horizontalLayout_3.addWidget(self.btn_start)
         self.btn_cancel = QtWidgets.QPushButton(Dialog)
+        self.btn_cancel.setStyleSheet("QPushButton{\n"
+"    background-color: rgb(233,233,233);\n"
+"    border-radius: 5px;\n"
+"    padding: 10px;\n"
+"}\n"
+"QPushButton:hover { \n"
+"    background-color: lightgray;\n"
+"border:1px solid rgb(31,156,220) ;\n"
+"}")
         self.btn_cancel.setObjectName("btn_cancel")
         self.horizontalLayout_3.addWidget(self.btn_cancel)
         self.verticalLayout.addLayout(self.horizontalLayout_3)
