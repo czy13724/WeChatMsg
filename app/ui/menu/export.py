@@ -6,12 +6,11 @@ from typing import List
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QTimer, QThread, pyqtSignal, QObject
 from PyQt5.QtGui import QTextCursor
-from PyQt5.QtWidgets import QApplication, QDialog, QCheckBox, QMessageBox, QCalendarWidget
+from PyQt5.QtWidgets import QApplication, QDialog, QCheckBox, QMessageBox
 
 from app.DataBase import micro_msg_db, misc_db
 from app.DataBase.output_pc import Output
 from app.components import ScrollBar
-from app.components.calendar_dialog import CalendarDialog
 from app.components.export_contact_item import ContactQListWidgetItem
 from app.person import Contact
 from app.ui.menu.exportUi import Ui_Dialog
@@ -65,7 +64,7 @@ class ExportDialog(QDialog, Ui_Dialog):
         self.textBrowser.setVerticalScrollBar(scroll_bar)
         self.export_choices = {"文本": True, "图片": True, "语音": False, "视频": False, "表情包": False,
                                '音乐与音频': False, '分享卡片': False, '文件': False,
-                               '转账': False, '音视频通话': False, '拍一拍等系统消息': True}  # 定义导出的数据类型
+                               '拍一拍等系统消息': True}  # 定义导出的数据类型
         self.setWindowTitle(title)
         self.checkBox_word.setEnabled(False)
         self.checkBox_word.setText('Docx(暂时不可用)')
