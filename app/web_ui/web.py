@@ -3,22 +3,38 @@ import sys
 import time
 
 import requests
-from flask import Flask, render_template, send_file, jsonify, make_response
+from flask import Flask, render_template, send_file, jsonify, make_response, request
 from pyecharts.charts import Bar
 
-from app.DataBase import msg_db
+from app.DataBase import msg_db, micro_msg_db
 from app.analysis import analysis
 from app.person import Contact, Me
 from app.util.emoji import get_most_emoji
 
 app = Flask(__name__)
 
+run_flag = False
 wxid = ''
 contact: Contact = None
-
+start_time = '2023-1-01 00:00:00'
+end_time = '2023-12-31 23:59:59'
+time_range = (start_time, end_time)
 html: str = ''
 api_url = 'http://api.lc044.love/upload'
 
+def get_contact(wxid):
+    contact_info_list = micro_msg_db.get_contact_by_username(wxid)
+    contact_info = {
+        'UserName': contact_info_list[0],
+        'Alias': contact_info_list[1],
+        'Type': contact_info_list[2],
+        'Remark': contact_info_list[3],
+        'NickName': contact_info_list[4],
+        'smallHeadImgUrl': contact_info_list[7],
+        'label_name': contact_info_list[10],
+    }
+    contact = Contact(contact_info)
+    return contact
 
 @app.route("/")
 def index():
@@ -26,15 +42,9 @@ def index():
     return "index.html"
 
 
-@app.route("/christmas")
-def christmas():
-    t = '2023-1-01 00:00:00'
-    s_t = time.strptime(t, "%Y-%m-%d %H:%M:%S")  # 返回元祖
-    start_time = int(time.mktime(s_t))
-    t = '2023-12-31 23:59:59'
-    s_t = time.strptime(t, "%Y-%m-%d %H:%M:%S")  # 返回元祖
-    end_time = int(time.mktime(s_t))
-    time_range = (start_time, end_time)
+@app.route("/christmas/<wxid>")
+def christmas(wxid):
+    contact = get_contact(wxid)
     # 渲染模板，并传递图表的 HTML 到模板中
     try:
         first_message, first_time = msg_db.get_first_time_of_message(contact.wxid)
@@ -164,7 +174,15 @@ def test():
 
 
 def run(port=21314):
-    app.run(debug=True, host='0.0.0.0', port=port, use_reloader=False)
+    global run_flag
+    if not run_flag:
+        try:
+            app.run(debug=True, host='0.0.0.0', port=port, use_reloader=False)
+            run_flag = True
+        except:
+            pass
+    else:
+        pass
 
 
 def resource_path(relative_path):
@@ -182,30 +200,32 @@ def get_image(filename):
         return send_file(os.path.join(f"{os.getcwd()}/data/avatar/", filename), mimetype='image/png')
 
 
-@app.route('/month_count')
+@app.route('/month_count', methods=['POST'])
 def get_chart_options():
     time_range = (0, time.time())
     data = analysis.month_count(contact.wxid, time_range=time_range)
     return jsonify(data)
 
 
-@app.route('/wordcloud')
+@app.route('/wordcloud', methods=['POST'])
 def get_wordcloud():
-    time_range = (0, time.time())
-    print(time_range, contact.wxid)
+    wxid = request.json.get('wxid')
+    time_range = request.json.get('time_range', [])
 
-    world_cloud_data = analysis.wordcloud_(contact.wxid, time_range=time_range)
+    world_cloud_data = analysis.wordcloud_(wxid, time_range=time_range)
     return jsonify(world_cloud_data)
 
 
-@app.route('/charts')
-def charts():
+@app.route('/charts/<wxid>')
+def charts(wxid):
     # 渲染模板，并传递图表的 HTML 到模板中
+    contact = get_contact(wxid)
     try:
-        first_message, first_time = msg_db.get_first_time_of_message(contact.wxid)
+        first_message, first_time = msg_db.get_first_time_of_message(wxid)
     except TypeError:
         first_time = '2023-01-01 00:00:00'
     data = {
+        'wxid':wxid,
         'my_nickname': Me().name,
         'ta_nickname': contact.remark,
         'first_time': first_time
@@ -213,16 +233,19 @@ def charts():
     return render_template('charts.html', **data)
 
 
-@app.route('/calendar')
+@app.route('/calendar', methods=['POST'])
 def get_calendar():
-    time_range = (0, time.time())
-    world_cloud_data = analysis.calendar_chart(contact.wxid, time_range=time_range)
+    wxid = request.json.get('wxid')
+    time_range = request.json.get('time_range',[])
+    world_cloud_data = analysis.calendar_chart(wxid, time_range=time_range)
     return jsonify(world_cloud_data)
 
 
-@app.route('/message_counter')
+@app.route('/message_counter', methods=['POST'])
 def get_counter():
-    time_range = (0, time.time())
+    wxid = request.json.get('wxid')
+    time_range = request.json.get('time_range', [])
+    contact = get_contact(wxid)
     data = analysis.sender(contact.wxid, time_range=time_range, my_name=Me().name, ta_name=contact.remark)
     return jsonify(data)
 

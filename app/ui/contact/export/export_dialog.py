@@ -4,15 +4,14 @@ import time
 from datetime import datetime, timedelta
 from PyQt5.QtCore import QTimer, QObject, pyqtSignal
 from PyQt5.QtGui import QTextCursor
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QDialog, QVBoxLayout, QCheckBox, QHBoxLayout, \
-    QProgressBar, QLabel, QMessageBox, QComboBox
+from PyQt5.QtWidgets import QApplication, QDialog, QCheckBox, QMessageBox
 
 from app.DataBase import msg_db
 from app.components import ScrollBar
 from app.config import output_dir
 from app.ui.menu.export_time_range import TimeRangeDialog
 from .exportUi import Ui_Dialog
-from app.DataBase.output import Output
+from app.util.exporter.output import Output
 
 types = {
     '文本': 1,
@@ -29,11 +28,14 @@ types = {
 }
 Stylesheet = """
 """
+
+
 class EmittingStr(QObject):
     textWritten = pyqtSignal(str)  # 定义一个发送str的信号
 
     def write(self, text):
         self.textWritten.emit(str(text))
+
 
 class ExportDialog(QDialog, Ui_Dialog):
     def __init__(self, contact=None, title="选择导出的类型", file_type="csv", parent=None):
@@ -51,7 +53,7 @@ class ExportDialog(QDialog, Ui_Dialog):
             self.export_type = Output.HTML
             self.export_choices = {"文本": True, "图片": True, "语音": False, "视频": False, "表情包": False,
                                    '音乐与音频': False, '分享卡片': False, '文件': False,
-                                   '转账': False, '音视频通话': False,'拍一拍等系统消息': True}  # 定义导出的数据类型，默认全部选择
+                                   '转账': False, '音视频通话': False, '拍一拍等系统消息': True}  # 定义导出的数据类型，默认全部选择
         elif file_type == 'csv':
             self.export_type = Output.CSV
             self.export_choices = {"文本": True, "图片": True, "视频": True, "表情包": True}  # 定义导出的数据类型，默认全部选择
@@ -105,18 +107,19 @@ class ExportDialog(QDialog, Ui_Dialog):
         self.timer.start(1000)
         self.start_time = time.time()
         # self.accept()  # 使用accept关闭对话框
+
     def outputWritten(self, text):
         cursor = self.textBrowser.textCursor()
         cursor.movePosition(QTextCursor.End)
         cursor.insertText(text)
         self.textBrowser.setTextCursor(cursor)
         self.textBrowser.ensureCursorVisible()
+
     def set_export_date(self):
         date_range = self.comboBox_time.currentText()
         if date_range == '全部时间':
             pass
         elif date_range == '最近三个月':
-
 
             # 获取今天的日期和时间
             today = datetime.now()
@@ -143,8 +146,8 @@ class ExportDialog(QDialog, Ui_Dialog):
             if chat_calendar:
                 start_time = datetime.strptime(chat_calendar[0], "%Y-%m-%d")
                 end_time = datetime.strptime(chat_calendar[-1], "%Y-%m-%d")
-                date_range = (start_time.date(),end_time.date())
-            self.time_range_view = TimeRangeDialog(date_range=date_range,parent=self)
+                date_range = (start_time.date(), end_time.date())
+            self.time_range_view = TimeRangeDialog(date_range=date_range, parent=self)
             self.time_range_view.date_range_signal.connect(self.set_time_range)
             self.time_range_view.show()
             self.comboBox_time.setCurrentIndex(0)
@@ -170,7 +173,8 @@ class ExportDialog(QDialog, Ui_Dialog):
         reply = QMessageBox(self)
         reply.setIcon(QMessageBox.Information)
         reply.setWindowTitle('OK')
-        reply.setText(f"导出聊天记录成功\n在{output_dir}目录下(跟exe文件在一起)\n{os.path.normpath(os.path.join(os.getcwd(),output_dir))}")
+        reply.setText(
+            f"导出聊天记录成功\n在{output_dir}目录下(跟exe文件在一起)\n{os.path.normpath(os.path.join(os.getcwd(), output_dir))}")
         reply.addButton("确认", QMessageBox.AcceptRole)
         reply.addButton("取消", QMessageBox.RejectRole)
         api = reply.exec_()
@@ -204,6 +208,7 @@ class ExportDialog(QDialog, Ui_Dialog):
         sys.stdout = sys.__stdout__
         del self.worker
         super().close()
+
 
 if __name__ == '__main__':
     import sys
