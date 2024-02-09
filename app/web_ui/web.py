@@ -8,7 +8,7 @@ from pyecharts.charts import Bar
 
 from app.DataBase import msg_db, micro_msg_db
 from app.analysis import analysis
-from app.person import Contact, Me
+from app.person import Contact, Me, ContactDefault
 from app.util.emoji import get_most_emoji
 
 app = Flask(__name__)
@@ -22,8 +22,11 @@ time_range = (start_time, end_time)
 html: str = ''
 api_url = 'http://api.lc044.love/upload'
 
+
 def get_contact(wxid):
     contact_info_list = micro_msg_db.get_contact_by_username(wxid)
+    if not contact_info_list:
+        return ContactDefault('')
     contact_info = {
         'UserName': contact_info_list[0],
         'Alias': contact_info_list[1],
@@ -36,10 +39,26 @@ def get_contact(wxid):
     contact = Contact(contact_info)
     return contact
 
+
 @app.route("/")
 def index():
-    # 渲染模板，并传递图表的 HTML 到模板中
-    return "index.html"
+    contact_topN_num = msg_db.get_chatted_top_contacts(time_range=time_range, top_n=9999999,contain_chatroom=True)
+    total_msg_num = sum(list(map(lambda x:x[1],contact_topN_num)))
+    contact_topN = []
+    send_msg_num = msg_db.get_send_messages_number_sum(time_range)
+    contact_topN_num = msg_db.get_chatted_top_contacts(time_range=time_range, top_n=9999999, contain_chatroom=False)
+    for wxid, num in contact_topN_num[:6]:
+        contact = get_contact(wxid)
+        contact_topN.append([contact, num])
+    my_message_counter_data = analysis.my_message_counter(time_range=time_range)
+    data = {
+        'avatar': Me().smallHeadImgUrl,
+        'contact_topN': contact_topN,
+        'contact_num':len(contact_topN_num),
+        'send_msg_num':send_msg_num ,
+        'receive_msg_num':total_msg_num-send_msg_num,
+    }
+    return render_template('index.html', **data,**my_message_counter_data)
 
 
 @app.route("/christmas/<wxid>")
@@ -202,8 +221,9 @@ def get_image(filename):
 
 @app.route('/month_count', methods=['POST'])
 def get_chart_options():
-    time_range = (0, time.time())
-    data = analysis.month_count(contact.wxid, time_range=time_range)
+    wxid = request.json.get('wxid')
+    time_range = request.json.get('time_range', [])
+    data = analysis.month_count(wxid, time_range=time_range)
     return jsonify(data)
 
 
@@ -225,7 +245,7 @@ def charts(wxid):
     except TypeError:
         first_time = '2023-01-01 00:00:00'
     data = {
-        'wxid':wxid,
+        'wxid': wxid,
         'my_nickname': Me().name,
         'ta_nickname': contact.remark,
         'first_time': first_time
@@ -236,7 +256,7 @@ def charts(wxid):
 @app.route('/calendar', methods=['POST'])
 def get_calendar():
     wxid = request.json.get('wxid')
-    time_range = request.json.get('time_range',[])
+    time_range = request.json.get('time_range', [])
     world_cloud_data = analysis.calendar_chart(wxid, time_range=time_range)
     return jsonify(world_cloud_data)
 
@@ -246,7 +266,7 @@ def get_counter():
     wxid = request.json.get('wxid')
     time_range = request.json.get('time_range', [])
     contact = get_contact(wxid)
-    data = analysis.sender(contact.wxid, time_range=time_range, my_name=Me().name, ta_name=contact.remark)
+    data = analysis.sender(wxid, time_range=time_range, my_name=Me().name, ta_name=contact.remark)
     return jsonify(data)
 
 
