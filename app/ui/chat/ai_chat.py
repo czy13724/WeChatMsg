@@ -5,7 +5,7 @@ import traceback
 import requests
 from PyQt5.QtCore import QThread, pyqtSignal, QSize, Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QApplication, QTextBrowser
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QApplication, QTextBrowser, QMessageBox
 
 from app.log import logger
 from app.ui.Icon import Icon
@@ -14,9 +14,8 @@ try:
     from .chatInfoUi import Ui_Form
 except:
     from chatInfoUi import Ui_Form
-from app.DataBase import msg_db, hard_link_db
-from app.components.bubble_message import BubbleMessage, ChatWidget, Notice
-from app.person import Me, Contact, ContactDefault
+from app.components.bubble_message import BubbleMessage
+from app.person import Me,ContactDefault
 
 
 class Message(QWidget):
@@ -61,9 +60,13 @@ class AIChat(QWidget, Ui_Form):
         self.init_ui()
         self.show_chats()
         self.pushButton.clicked.connect(self.send_msg)
+        self.toolButton.clicked.connect(self.tool)
 
     def init_ui(self):
         self.textEdit.installEventFilter(self)
+
+    def tool(self):
+        QMessageBox.information(self, "温馨提示", "暂未接入聊天数据，您可进行基础的AI对话，后续更新敬请期待")
 
     def chat(self, text):
         self.now_message.append(text)
@@ -141,9 +144,16 @@ class AIChatThread(QThread):
                 }
             ]
         }
+        message = '''
+        幼儿园三班一共有35人，上个月34人满勤。\n其中1月15日，小明同学感冒了，他的妈妈给他请了一天的病假。
+        '''
         try:
+            # for s in message:
+            #     self.msgSignal.emit(s)
+            #     time.sleep(0.05)
+            # return
             resp = requests.post(url, json=data, stream=True)
-            if resp.status_code==200:
+            if resp.status_code == 200:
                 for line in resp.iter_lines():
                     if line:
                         trunk = line.decode('utf-8')

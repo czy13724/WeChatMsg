@@ -63,7 +63,7 @@ class HtmlExporter(ExporterBase):
         )
 
     def audio(self, doc, message):
-        origin_path = os.path.join(os.path.abspath('../../DataBase'), output_dir, '聊天记录', self.contact.remark)
+        origin_path = os.path.join(os.getcwd(), output_dir, '聊天记录', self.contact.remark)
         str_content = message[7]
         str_time = message[8]
         is_send = message[4]
@@ -99,7 +99,7 @@ class HtmlExporter(ExporterBase):
         )
 
     def file(self, doc, message):
-        origin_path = os.path.join(os.path.abspath('../../DataBase'), output_dir, '聊天记录', self.contact.remark)
+        origin_path = os.path.join(os.getcwd(), output_dir, '聊天记录', self.contact.remark)
         bytesExtra = message[10]
         compress_content = message[11]
         str_time = message[8]
@@ -170,7 +170,7 @@ class HtmlExporter(ExporterBase):
         )
 
     def video(self, doc, message):
-        origin_path = os.path.join(os.path.abspath('../../DataBase'), output_dir, '聊天记录', self.contact.remark)
+        origin_path = os.path.join(os.getcwd(), output_dir, '聊天记录', self.contact.remark)
         type_ = message[2]
         str_content = message[7]
         str_time = message[8]
@@ -211,7 +211,7 @@ class HtmlExporter(ExporterBase):
         )
 
     def music_share(self, doc, message):
-        origin_path = os.path.join(os.path.abspath('../../DataBase'), output_dir, '聊天记录', self.contact.remark)
+        origin_path = os.path.join(os.getcwd(), output_dir, '聊天记录', self.contact.remark)
         is_send = message[4]
         timestamp = message[5]
         content = music_share(message[11])
@@ -232,7 +232,7 @@ class HtmlExporter(ExporterBase):
             )
 
     def share_card(self, doc, message):
-        origin_path = os.path.join(os.path.abspath('../../DataBase'), output_dir, '聊天记录', self.contact.remark)
+        origin_path = os.path.join(os.getcwd(), output_dir, '聊天记录', self.contact.remark)
         is_send = message[4]
         timestamp = message[5]
         bytesExtra = message[10]
@@ -270,15 +270,17 @@ class HtmlExporter(ExporterBase):
         is_chatroom = 1 if self.contact.is_chatroom else 0
         avatar = self.get_avatar_path(is_send, message)
         display_name = self.get_display_name(is_send, message)
-        text_info_map = {
-            1: transfer_detail["pay_memo"] or "转账",
-            3: "已收款",
-            4: "已退还",
-            7: "未知",
-        }
-        doc.write(
-            f"""{{ type:49, sub_type:2000,text:'{text_info_map[transfer_detail["paysubtype"]]}',is_send:{is_send},avatar_path:'{avatar}',timestamp:{timestamp},is_chatroom:{is_chatroom},displayname:'{display_name}',paysubtype:{transfer_detail["paysubtype"]},pay_memo:'{transfer_detail["pay_memo"]}',feedesc:'{transfer_detail["feedesc"]}',}},\n""")
-
+        try:
+            text_info_map = {
+                1: transfer_detail["pay_memo"] or "转账",
+                3: "已收款",
+                4: "已退还",
+                7: "未知",
+            }
+            doc.write(
+                f"""{{ type:49, sub_type:2000,text:'{text_info_map[transfer_detail["paysubtype"]]}',is_send:{is_send},avatar_path:'{avatar}',timestamp:{timestamp},is_chatroom:{is_chatroom},displayname:'{display_name}',paysubtype:{transfer_detail["paysubtype"]},pay_memo:'{transfer_detail["pay_memo"]}',feedesc:'{transfer_detail["feedesc"]}',}},\n""")
+        except Exception as e:
+            logger.error(f'转账解析错误：{transfer_detail}\n{traceback.format_exc()}')
     def call(self, doc, message):
         is_send = message[4]
         timestamp = message[5]
@@ -379,7 +381,7 @@ class OutputMedia(QThread):
         self.contact = contact
 
     def run(self):
-        origin_path = os.path.join(os.path.abspath('../../DataBase'), output_dir, '聊天记录', self.contact.remark)
+        origin_path = os.path.join(os.getcwd(), output_dir, '聊天记录', self.contact.remark)
         messages = msg_db.get_messages_by_type(self.contact.wxid, 34)
         for message in messages:
             is_send = message[4]
@@ -408,7 +410,7 @@ class OutputEmoji(QThread):
         self.contact = contact
 
     def run(self):
-        origin_path = os.path.join(os.path.abspath('../../DataBase'), output_dir, '聊天记录', self.contact.remark)
+        origin_path = os.path.join(os.getcwd(), output_dir, '聊天记录', self.contact.remark)
         messages = msg_db.get_messages_by_type(self.contact.wxid, 47)
         for message in messages:
             str_content = message[7]
@@ -445,7 +447,7 @@ class OutputImage(QThread):
             print("图片导出完成")
 
     def run(self):
-        origin_path = os.path.join(os.path.abspath('../../DataBase'), output_dir, '聊天记录', self.contact.remark)
+        origin_path = os.path.join(os.getcwd(), output_dir, '聊天记录', self.contact.remark)
         messages = msg_db.get_messages_by_type(self.contact.wxid, 3)
         base_path = os.path.join(output_dir, '聊天记录', self.contact.remark, 'image')
         for message in messages:
@@ -487,7 +489,7 @@ class OutputImageChild(QThread):
         self.messages = messages
 
     def run(self):
-        origin_path = os.path.join(os.path.abspath('../../DataBase'), output_dir, '聊天记录', self.contact.remark)
+        origin_path = os.path.join(os.getcwd(), output_dir, '聊天记录', self.contact.remark)
         for message in self.messages:
             str_content = message[7]
             BytesExtra = message[10]
