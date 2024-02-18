@@ -1,8 +1,12 @@
 import json
 import os.path
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QWidget, QMessageBox
+import time
 
+import requests
+from PyQt5.QtCore import pyqtSignal, QThread
+from PyQt5.QtWidgets import QWidget, QMessageBox
+from app.config import SEND_LOG_FLAG
+from app.person import Me
 from .settingUi import Ui_Form
 
 Stylesheet = """
@@ -64,6 +68,12 @@ QCheckBox::indicator:checked{
 """
 
 
+def set_SEND_LOG_FLAG(flag):
+    # noinspection PyGlobalUndefined
+    global SEND_LOG_FLAG
+    SEND_LOG_FLAG = flag
+
+
 class SettingControl(QWidget, Ui_Form):
 
     def __init__(self, parent=None):
@@ -72,6 +82,9 @@ class SettingControl(QWidget, Ui_Form):
         self.setupUi(self)
 
         self.btn_addstopword.clicked.connect(self.add_stopwords)
+        self.btn_addnewword_2.clicked.connect(self.add_new_words)
+        self.commandLinkButton_send_error_log.clicked.connect(self.show_info)
+        self.btn_send_error_log.clicked.connect(self.send_error_log)
         self.init_ui()
         self.read_data()
 
@@ -79,16 +92,25 @@ class SettingControl(QWidget, Ui_Form):
         self.checkBox.setText('是')
         self.checkBox_send_error_log.clicked.connect(self.set_error_log)
 
+    def show_info(self):
+        QMessageBox.information(self, "收集错误信息",
+                                "为了更好的解决用户问题，需要收集软件崩溃导致的错误信息，该操作不会上传包括手机号、微信号、昵称等在内的任何信息\n"
+                                )
+
     def set_error_log(self):
         if self.checkBox_send_error_log.isChecked():
             self.label_error_log.setText('开')
+            set_SEND_LOG_FLAG(True)
         else:
             self.label_error_log.setText('关')
+            set_SEND_LOG_FLAG(False)
+        print('SEND_LOG_FLAG:', SEND_LOG_FLAG)
 
     def read_data(self):
         os.makedirs('./app/data', exist_ok=True)
         stopwords = ['裂开', '苦涩', '叹气', '凋谢', '让我看看', '酷', '奋斗', '疑问', '擦汗', '抠鼻', '鄙视', '勾引',
                      '奸笑', '嘿哈', '捂脸', '机智', '加油', '吃瓜', '尴尬', '炸弹', '旺柴']
+        new_words = ['YYDS', '666', '显眼包', '遥遥领先']
         if os.path.exists('./app/data/stopwords.txt'):
             with open('./app/data/stopwords.txt', 'r', encoding='utf-8') as f:
                 stopwords = set(f.read().splitlines())
@@ -98,6 +120,15 @@ class SettingControl(QWidget, Ui_Form):
             stopwords = '\n'.join(stopwords)
             with open('./app/data/stopwords.txt', 'w', encoding='utf-8') as f:
                 f.write(stopwords)
+        if os.path.exists('./app/data/new_words.txt'):
+            with open('./app/data/new_words.txt', 'r', encoding='utf-8') as f:
+                stopwords = set(f.read().splitlines())
+                self.plainTextEdit_newword.setPlainText(' '.join(new_words))
+        else:
+            self.plainTextEdit_newword.setPlainText(' '.join(new_words))
+            stopwords = '\n'.join(stopwords)
+            with open('./app/data/new_words.txt', 'w', encoding='utf-8') as f:
+                f.write(stopwords)
 
     def add_stopwords(self):
         text = self.plainTextEdit.toPlainText()
@@ -105,3 +136,73 @@ class SettingControl(QWidget, Ui_Form):
         with open('./app/data/stopwords.txt', 'w', encoding='utf-8') as f:
             f.write(stopwords)
         QMessageBox.about(self, "添加成功", "停用词添加成功")
+
+    def add_new_words(self):
+        text = self.plainTextEdit_newword.toPlainText()
+        new_words = '\n'.join(text.split())
+        with open('./app/data/new_words.txt', 'w', encoding='utf-8') as f:
+            f.write(new_words)
+        QMessageBox.about(self, "添加成功", "自定义词添加成功")
+
+    def send_error_log(self):
+        self.send_thread = MyThread()
+        self.send_thread.signal.connect(self.show_resp)
+        self.send_thread.start()
+
+    def show_resp(self, message):
+        if message.get('code') == 200:
+            QMessageBox.about(self, "发送结果", f"日志发送成功\n{message.get('message')}")
+        else:
+            QMessageBox.about(self, "发送结果", f"{message.get('code')}:{message.get('errmsg')}")
+
+
+class MyThread(QThread):
+    signal = pyqtSignal(dict)
+
+    def __init__(self, message=''):
+        super(MyThread, self).__init__()
+        if message:
+            self.message = message
+        else:
+            filename = time.strftime("%Y-%m-%d", time.localtime(time.time()))
+            file_path = f'{filename}-log.log'
+            if os.path.exists(file_path):
+                with open(file_path, 'r', encoding='gbk') as f:
+                    self.message = f.read()
+            elif os.path.exists(f'./app/log/logs/{filename}-log.log'):
+                with open(f'./app/log/logs/{filename}-log.log', 'r', encoding='gbk') as f:
+                    self.message = f.read()
+
+    def __del__(self):
+        pass
+
+    def send_error_msg(self, message):
+        url = "http://api.lc044.love/error"
+        if not message:
+            return {
+                'code': 201,
+                'errmsg': '日志为空'
+            }
+        data = {
+            'username': Me().wxid,
+            'error': message
+        }
+        try:
+            response = requests.post(url, json=data)
+            if response.status_code == 200:
+                resp_info = response.json()
+                return resp_info
+            else:
+                return {
+                    'code': 503,
+                    'errmsg': '服务器错误'
+                }
+        except:
+            return {
+                'code': 404,
+                'errmsg': '客户端错误'
+            }
+
+    def run(self):
+        resp_info = self.send_error_msg(self.message)
+        self.signal.emit(resp_info)
